@@ -3,6 +3,8 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 const { doGoto, doWait, doClickText, doHighlight, doScroll } = require('./actions');
 const { retryWithBackoff } = require('../utils/retryWithBackoff');
+const { HumanMotionEngine } = require('./humanMotion');
+const { introSettle, idle } = require('./motionBeats');
 
 function toMs(sec) { return Math.max(0, Math.floor(sec * 1000)); }
 
@@ -62,25 +64,37 @@ async function recordScene(scene, ctx) {
   const page = await context.newPage();
   const video = await page.video();
 
+  // Initialize Human Motion Engine for realistic cursor behavior
+  const seed = scene.id ? scene.id.split('-').reduce((acc, part) => acc + part.charCodeAt(0), 0) : Date.now();
+  const hme = new HumanMotionEngine(seed, 'trackpad');
+  await hme.init(page);
+  console.log('[recordScene] Human Motion Engine initialized');
+
   // Apply actions within the scene duration
   let remaining = toMs(scene.durationSec);
   const consume = v => { remaining = Math.max(0, remaining - v); };
 
   // Always goto first (or if action list doesn't include it)
   if (!scene.actions?.length || scene.actions[0]?.type !== 'goto') {
-    await doGoto(page, scene.url); consume(1500);
+    await doGoto(page, scene.url, hme); consume(1500);
+  }
+
+  // Intro settle - cursor enters naturally
+  if (remaining > 1200) {
+    const elapsed = await introSettle(hme, page);
+    consume(elapsed);
   }
 
   for (const action of (scene.actions || [])) {
     if (remaining <= 0) break;
     switch (action.type) {
-      case 'goto': await doGoto(page, scene.url); consume(1500); break;
+      case 'goto': await doGoto(page, scene.url, hme); consume(1500); break;
       case 'wait': await doWait(page, action.ms || 1000); consume(action.ms || 1000); break;
-      case 'clickText': await doClickText(page, action.text || ''); consume(800); break;
-      case 'highlight': await doHighlight(page, action.text || '', action.ms || 2000); consume(action.ms || 2000); break;
+      case 'clickText': await doClickText(page, action.text || '', hme); consume(800); break;
+      case 'highlight': await doHighlight(page, action.text || '', action.ms || 2000, hme); consume(action.ms || 2000); break;
       case 'scroll': {
         const ms = Math.max(1000, Math.min(remaining - 300, action.ms || remaining - 300));
-        await doScroll(page, action.pattern || 'slow-drift', ms);
+        await doScroll(page, action.pattern || 'slow-drift', ms, hme);
         consume(ms);
         break;
       }
@@ -88,8 +102,13 @@ async function recordScene(scene, ctx) {
     }
   }
 
-  // Fill the rest of the scene
-  if (remaining > 0) await page.waitForTimeout(remaining);
+  // Fill the rest of the scene with intelligent idle motion
+  if (remaining > 1000) {
+    const elapsed = await idle(hme, page, remaining);
+    consume(elapsed);
+  } else if (remaining > 0) {
+    await page.waitForTimeout(remaining);
+  }
 
   console.log(`[recordScene] Scene recording complete, closing context and browser...`);
   await context.close(); // this finalizes the .webm and downloads it from browserless.io
