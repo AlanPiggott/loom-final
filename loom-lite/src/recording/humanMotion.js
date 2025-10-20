@@ -153,52 +153,55 @@ class HumanMotionEngine {
         position: fixed;
         left: 0;
         top: 0;
-        width: 0;
-        height: 0;
-        transform: translate(-9999px, -9999px);
+        width: 20px;
+        height: 20px;
+        transform: translate(${this.currentPos.x}px, ${this.currentPos.y}px);
         z-index: 2147483647;
         pointer-events: none;
         transition: none;
+        opacity: 1;
+        will-change: transform;
       }
-      #hme-cursor::before {
-        content: '';
+      #hme-cursor svg {
         position: absolute;
-        left: 0;
         top: 0;
-        width: 0;
-        height: 0;
-        border-left: 10px solid transparent;
-        border-right: 10px solid transparent;
-        border-bottom: 16px solid white;
-        transform: rotate(-45deg) translate(-7px, -3px);
-        filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3)) drop-shadow(0 0 1px rgba(0,0,0,0.5));
-      }
-      #hme-cursor::after {
-        content: '';
-        position: absolute;
         left: 0;
-        top: 0;
-        width: 0;
-        height: 0;
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-bottom: 13px solid black;
-        transform: rotate(-45deg) translate(-6px, -2px);
-        filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+        width: 20px;
+        height: 20px;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
       }
-      #hme-cursor.clicking::before {
+      #hme-cursor.clicking {
         animation: click-pulse 0.15s ease-out;
       }
       @keyframes click-pulse {
-        0%, 100% { transform: rotate(-45deg) translate(-7px, -3px) scale(1); }
-        50% { transform: rotate(-45deg) translate(-7px, -3px) scale(0.9); }
+        0%, 100% { transform: translate(var(--x), var(--y)) scale(1); }
+        50% { transform: translate(var(--x), var(--y)) scale(0.9); }
       }
     `});
 
     await page.evaluate((startPos) => {
       const el = document.createElement('div');
       el.id = 'hme-cursor';
+
+      // Create SVG cursor - standard white arrow with black outline
+      el.innerHTML = `
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <!-- Black outline -->
+          <path d="M 0 0 L 0 16 L 6 10 L 10 18 L 12 17 L 8 9 L 14 9 Z"
+                fill="black" stroke="black" stroke-width="0.5"/>
+          <!-- White fill -->
+          <path d="M 1 1 L 1 14 L 6 9 L 9.5 16.5 L 10.5 16 L 7 8.5 L 12.5 8.5 Z"
+                fill="white"/>
+        </svg>
+      `;
+
       document.body.appendChild(el);
+
+      // Set initial position
+      el.style.transform = `translate(${startPos.x}px, ${startPos.y}px)`;
+      el.style.setProperty('--x', `${startPos.x}px`);
+      el.style.setProperty('--y', `${startPos.y}px`);
+
       window.__hme = { el, x: startPos.x, y: startPos.y };
     }, this.currentPos);
   }
@@ -271,7 +274,11 @@ class HumanMotionEngine {
       while (t < durationMs) {
         const dx = jitter(t / 1000, 0.6, 2.8);
         const dy = jitter(t / 1000 + 0.3, 0.6, 3.2);
-        cur.style.transform = `translate(${baseX + dx}px, ${baseY + dy}px)`;
+        const x = baseX + dx;
+        const y = baseY + dy;
+        cur.style.transform = `translate(${x}px, ${y}px)`;
+        cur.style.setProperty('--x', `${x}px`);
+        cur.style.setProperty('--y', `${y}px`);
 
         await new Promise(r => requestAnimationFrame(r));
         t = performance.now() - start;
@@ -279,6 +286,8 @@ class HumanMotionEngine {
 
       // Return to base position
       cur.style.transform = `translate(${baseX}px, ${baseY}px)`;
+      cur.style.setProperty('--x', `${baseX}px`);
+      cur.style.setProperty('--y', `${baseY}px`);
     }, { durationMs, baseX: basePos.x, baseY: basePos.y });
 
     const elapsed = Date.now() - startTime;
@@ -293,6 +302,8 @@ class HumanMotionEngine {
       const cur = window.__hme.el;
       for (const f of frames) {
         cur.style.transform = `translate(${f.x}px, ${f.y}px)`;
+        cur.style.setProperty('--x', `${f.x}px`);
+        cur.style.setProperty('--y', `${f.y}px`);
         window.__hme.x = f.x;
         window.__hme.y = f.y;
         await new Promise(r => requestAnimationFrame(r));
