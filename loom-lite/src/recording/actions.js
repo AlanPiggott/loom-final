@@ -28,6 +28,12 @@ async function doGoto(page, url, hme = null) {
 
   // Wait a moment for page to settle after navigation
   await page.waitForTimeout(500);
+
+  // Re-inject cursor after navigation if HME is initialized
+  // (Navigation resets the DOM, wiping any injected elements)
+  if (hme && hme.initialized) {
+    await hme.reinject(page);
+  }
 }
 
 async function doWait(page, ms) {
@@ -109,37 +115,63 @@ async function doScroll(page, pattern = 'slow-drift', durationMs = 5000, hme = n
     const startTime = Date.now();
     let elapsed = 0;
     let burstCount = 0;
-
-    // Determine if we should include a peek based on pattern
-    const shouldPeek = pattern === 'pause-peek' || (pattern === 'slow-drift' && Math.random() > 0.7);
+    let scrollBackCount = 0;
 
     while (elapsed < durationMs) {
-      // Scroll burst with human-like variation
-      const amplitude = 240 + Math.round(240 * Math.random());
-      const duration = 320 + Math.round(220 * Math.random());
-      await hme.scrollBurst(amplitude, duration);
+      // Faster scroll burst with human-like variation (2-3x faster than before)
+      const amplitude = 600 + Math.round(600 * Math.random()); // 600-1200px (was 240-480px)
+      const duration = 300 + Math.round(300 * Math.random()); // 300-600ms (was 320-540ms)
+
+      // Use coordinated scroll+cursor movement
+      await hme.scrollBurstWithCursor(amplitude, duration);
       burstCount++;
 
       elapsed = Date.now() - startTime;
       if (elapsed >= durationMs) break;
 
-      // Pause to "read" with realistic timing
-      const pauseMs = pattern === 'pause-peek'
-        ? 1400 + Math.round(600 * Math.random())
-        : 1100 + Math.round(900 * Math.random());
-      await page.waitForTimeout(Math.min(pauseMs, durationMs - elapsed));
+      // Variable pause duration - sometimes quick glance, sometimes longer highlight
+      const isLongPause = Math.random() < 0.4; // 40% long pauses
+      const pauseMs = isLongPause
+        ? 1500 + Math.round(1500 * Math.random()) // Long: 1500-3000ms
+        : 400 + Math.round(400 * Math.random());  // Short: 400-800ms
+
+      const actualPauseMs = Math.min(pauseMs, durationMs - elapsed);
+
+      // During pause, 60% chance to hover over an interesting element
+      if (Math.random() < 0.6) {
+        const element = await hme.findInterestingElement();
+        if (element) {
+          const targetX = element.rect.x + element.rect.width / 2;
+          const targetY = element.rect.y + element.rect.height / 2;
+          await hme.moveTo(targetX, targetY, element.rect.width);
+          await hme.hover(Math.min(actualPauseMs, 600 + Math.round(400 * Math.random())));
+          console.log(`[doScroll] Hovered over ${element.type} during pause`);
+        } else {
+          // Fallback to regular pause if no element found
+          await page.waitForTimeout(actualPauseMs);
+        }
+      } else {
+        // 40% chance: just idle with small cursor drift
+        await page.waitForTimeout(actualPauseMs);
+      }
 
       elapsed = Date.now() - startTime;
       if (elapsed >= durationMs) break;
 
-      // Occasional peek (once during the scroll)
-      if (shouldPeek && burstCount === 2) {
-        await hme.peek();
+      // More frequent scroll-backs (2-3 times per session instead of just once)
+      const shouldScrollBack = scrollBackCount < 3 && Math.random() < 0.25; // 25% chance each burst
+      if (shouldScrollBack) {
+        // Scroll back up to re-highlight something
+        const scrollBackAmount = 150 + Math.round(150 * Math.random()); // 150-300px
+        await hme.scrollBurstWithCursor(-scrollBackAmount, 300);
+        await page.waitForTimeout(400 + Math.round(300 * Math.random()));
+        scrollBackCount++;
+        console.log(`[doScroll] Scroll-back #${scrollBackCount}: ${scrollBackAmount}px`);
         elapsed = Date.now() - startTime;
       }
     }
 
-    console.log(`[doScroll] HME scrolling complete: ${burstCount} bursts over ${elapsed}ms`);
+    console.log(`[doScroll] HME scrolling complete: ${burstCount} bursts, ${scrollBackCount} scroll-backs over ${elapsed}ms`);
     return;
   }
 

@@ -145,41 +145,47 @@ class HumanMotionEngine {
 
   /**
    * Inject custom cursor overlay (CSS cursor:none + fixed div)
+   * Uses page.evaluate() to bypass CSP restrictions
    */
   async injectCursor(page) {
-    await page.addStyleTag({ content: `
-      html, body, * { cursor: none !important; }
-      #hme-cursor {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 20px;
-        height: 20px;
-        transform: translate(${this.currentPos.x}px, ${this.currentPos.y}px);
-        z-index: 2147483647;
-        pointer-events: none;
-        transition: none;
-        opacity: 1;
-        will-change: transform;
-      }
-      #hme-cursor svg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 20px;
-        height: 20px;
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-      }
-      #hme-cursor.clicking {
-        animation: click-pulse 0.15s ease-out;
-      }
-      @keyframes click-pulse {
-        0%, 100% { transform: translate(var(--x), var(--y)) scale(1); }
-        50% { transform: translate(var(--x), var(--y)) scale(0.9); }
-      }
-    `});
-
     await page.evaluate((startPos) => {
+      // Inject styles directly into the DOM (bypasses CSP)
+      const styleEl = document.createElement('style');
+      styleEl.id = 'hme-cursor-styles';
+      styleEl.textContent = `
+        html, body, * { cursor: none !important; }
+        #hme-cursor {
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: 20px;
+          height: 20px;
+          transform: translate(${startPos.x}px, ${startPos.y}px);
+          z-index: 2147483647;
+          pointer-events: none;
+          transition: none;
+          opacity: 1;
+          will-change: transform;
+        }
+        #hme-cursor svg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 20px;
+          height: 20px;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+        }
+        #hme-cursor.clicking {
+          animation: click-pulse 0.15s ease-out;
+        }
+        @keyframes click-pulse {
+          0%, 100% { transform: translate(var(--x), var(--y)) scale(1); }
+          50% { transform: translate(var(--x), var(--y)) scale(0.9); }
+        }
+      `;
+      document.head.appendChild(styleEl);
+
+      // Create cursor element
       const el = document.createElement('div');
       el.id = 'hme-cursor';
 
@@ -207,6 +213,50 @@ class HumanMotionEngine {
   }
 
   /**
+   * Re-inject cursor after navigation (DOM reset)
+   * Removes old cursor element and styles if present, then injects fresh ones
+   */
+  async reinject(page) {
+    // Remove old cursor element and styles if they exist
+    await page.evaluate(() => {
+      const oldCursor = document.getElementById('hme-cursor');
+      if (oldCursor) {
+        oldCursor.remove();
+      }
+      const oldStyles = document.getElementById('hme-cursor-styles');
+      if (oldStyles) {
+        oldStyles.remove();
+      }
+    });
+
+    // Re-inject cursor
+    await this.injectCursor(page);
+    console.log('[HME] Cursor re-injected after navigation');
+  }
+
+  /**
+   * Check if cursor element exists in DOM
+   */
+  async cursorExists() {
+    if (!this.page) return false;
+    return await this.page.evaluate(() => {
+      return !!document.getElementById('hme-cursor');
+    });
+  }
+
+  /**
+   * Ensure cursor exists, reinject if missing (defensive check)
+   */
+  async ensureCursor() {
+    if (!this.page) return;
+    const exists = await this.cursorExists();
+    if (!exists) {
+      console.log('[HME] Cursor missing, re-injecting...');
+      await this.reinject(this.page);
+    }
+  }
+
+  /**
    * Get current cursor position
    */
   getCurrentPosition() {
@@ -220,6 +270,9 @@ class HumanMotionEngine {
     if (!this.initialized) {
       throw new Error('[HME] Not initialized. Call init(page) first.');
     }
+
+    // Defensive check: ensure cursor exists before animating
+    await this.ensureCursor();
 
     const p0 = this.getCurrentPosition();
     const p1 = { x, y };
@@ -258,6 +311,9 @@ class HumanMotionEngine {
    */
   async hover(durationMs) {
     if (!this.initialized) return;
+
+    // Defensive check: ensure cursor exists
+    await this.ensureCursor();
 
     const startTime = Date.now();
     const basePos = this.getCurrentPosition();
@@ -317,6 +373,9 @@ class HumanMotionEngine {
   async scrollBurst(amplitude = 360, durationMs = 420) {
     if (!this.initialized) return;
 
+    // Defensive check: ensure cursor exists (scrolling is still visible without cursor, but good to verify)
+    await this.ensureCursor();
+
     const A = amplitude;
     const Tb = durationMs;
 
@@ -336,6 +395,53 @@ class HumanMotionEngine {
     }, { A, Tb });
 
     console.log(`[HME] Scroll burst: ${Math.round(amplitude)}px over ${Math.round(durationMs)}ms`);
+  }
+
+  /**
+   * Scroll burst WITH coordinated cursor movement
+   * Cursor drifts down (or up) the viewport while scrolling
+   */
+  async scrollBurstWithCursor(amplitude = 600, durationMs = 450) {
+    if (!this.initialized) return;
+
+    // Defensive check: ensure cursor exists
+    await this.ensureCursor();
+
+    // Determine cursor drift during scroll
+    // If scrolling down, cursor moves down viewport (e.g., from y=300 to y=500)
+    // If scrolling up, cursor moves up viewport
+    const cursorStartY = this.currentPos.y;
+    const viewportDrift = Math.sign(amplitude) * (150 + Math.round(100 * this.rng())); // 150-250px drift
+    const cursorEndY = Math.max(100, Math.min(620, cursorStartY + viewportDrift)); // Keep cursor in viewport
+
+    // Small horizontal drift too (natural mouse wiggle)
+    const cursorStartX = this.currentPos.x;
+    const horizontalDrift = (this.rng() - 0.5) * 60; // -30 to +30px
+    const cursorEndX = Math.max(100, Math.min(1180, cursorStartX + horizontalDrift));
+
+    // Start scroll and cursor movement simultaneously
+    const scrollPromise = this.page.evaluate(async ({ A, Tb }) => {
+      const scroller = document.scrollingElement || document.documentElement;
+      const start = performance.now();
+      let t = 0;
+
+      while (t < Tb) {
+        const u = t / Tb;
+        const dy = A * Math.sin(Math.PI * u) * 0.016; // ramp up then down
+        scroller.scrollBy({ top: dy, behavior: 'auto' });
+
+        await new Promise(r => requestAnimationFrame(r));
+        t = performance.now() - start;
+      }
+    }, { A: amplitude, Tb: durationMs });
+
+    // Move cursor simultaneously (but don't await yet)
+    const cursorPromise = this.moveTo(cursorEndX, cursorEndY, 80);
+
+    // Wait for both to complete
+    await Promise.all([scrollPromise, cursorPromise]);
+
+    console.log(`[HME] Scroll+cursor: ${Math.round(amplitude)}px scroll, cursor (${Math.round(cursorStartX)},${Math.round(cursorStartY)}) → (${Math.round(cursorEndX)},${Math.round(cursorEndY)})`);
   }
 
   /**
@@ -454,6 +560,38 @@ class HumanMotionEngine {
         rect: e.rect
       }));
     });
+  }
+
+  /**
+   * Find and return the best interesting element in current viewport
+   * Returns null if no good candidates found
+   */
+  async findInterestingElement() {
+    const elements = await this.findPointsOfInterest();
+    if (elements.length === 0) return null;
+
+    // Get viewport info
+    const viewport = await this.page.evaluate(() => ({
+      centerY: window.innerHeight / 2,
+      centerX: window.innerWidth / 2
+    }));
+
+    // Score elements by distance from viewport center and element type score
+    const scoredElements = elements.map(el => {
+      const distFromCenter = Math.hypot(
+        el.rect.x + el.rect.width / 2 - viewport.centerX,
+        el.rect.y + el.rect.height / 2 - viewport.centerY
+      );
+      // Prefer elements closer to center, but also consider element type score
+      const finalScore = el.score * 100 / (distFromCenter + 100);
+      return { ...el, finalScore, distFromCenter };
+    });
+
+    // Sort by final score (higher is better)
+    scoredElements.sort((a, b) => b.finalScore - a.finalScore);
+
+    // Return the best element
+    return scoredElements[0];
   }
 
   /**

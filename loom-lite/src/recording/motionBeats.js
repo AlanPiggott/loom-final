@@ -62,7 +62,7 @@ async function hoverNav(hme, page, navText) {
 
 /**
  * Natural scrolling drift with bursts and pauses
- * Occasional peek behavior
+ * Cursor follows scroll and hovers over interesting elements
  * Duration: ~targetSeconds
  */
 async function scrollDrift(hme, page, targetSeconds = 6) {
@@ -71,34 +71,58 @@ async function scrollDrift(hme, page, targetSeconds = 6) {
 
   let elapsed = 0;
   let burstCount = 0;
-  const shouldPeek = Math.random() > 0.6; // 40% chance of peek
+  let scrollBackCount = 0;
 
   while (elapsed < targetMs) {
-    // Scroll burst
-    const amplitude = 240 + Math.round(240 * Math.random());
-    const duration = 320 + Math.round(220 * Math.random());
-    await hme.scrollBurst(amplitude, duration);
+    // Faster scroll burst with coordinated cursor movement
+    const amplitude = 600 + Math.round(600 * Math.random()); // 600-1200px
+    const duration = 300 + Math.round(300 * Math.random()); // 300-600ms
+    await hme.scrollBurstWithCursor(amplitude, duration);
     burstCount++;
 
     elapsed = Date.now() - startTime;
     if (elapsed >= targetMs) break;
 
-    // Pause to "read"
-    const pauseMs = 1100 + Math.round(900 * Math.random());
-    await page.waitForTimeout(Math.min(pauseMs, targetMs - elapsed));
+    // Variable pause duration
+    const isLongPause = Math.random() < 0.4;
+    const pauseMs = isLongPause
+      ? 1500 + Math.round(1500 * Math.random())
+      : 400 + Math.round(400 * Math.random());
+
+    const actualPauseMs = Math.min(pauseMs, targetMs - elapsed);
+
+    // During pause, 60% chance to hover over an interesting element
+    if (Math.random() < 0.6) {
+      const element = await hme.findInterestingElement();
+      if (element) {
+        const targetX = element.rect.x + element.rect.width / 2;
+        const targetY = element.rect.y + element.rect.height / 2;
+        await hme.moveTo(targetX, targetY, element.rect.width);
+        await hme.hover(Math.min(actualPauseMs, 600 + Math.round(400 * Math.random())));
+      } else {
+        await page.waitForTimeout(actualPauseMs);
+      }
+    } else {
+      // Just pause without element interaction
+      await page.waitForTimeout(actualPauseMs);
+    }
 
     elapsed = Date.now() - startTime;
     if (elapsed >= targetMs) break;
 
-    // Occasional peek (once per drift)
-    if (shouldPeek && burstCount === 2) {
-      await hme.peek();
+    // Occasional scroll-back to re-highlight content
+    const shouldScrollBack = scrollBackCount < 3 && Math.random() < 0.25;
+    if (shouldScrollBack) {
+      const scrollBackAmount = 150 + Math.round(150 * Math.random());
+      await hme.scrollBurstWithCursor(-scrollBackAmount, 300);
+      await page.waitForTimeout(400 + Math.round(300 * Math.random()));
+      scrollBackCount++;
       elapsed = Date.now() - startTime;
     }
   }
 
   const finalElapsed = Date.now() - startTime;
-  console.log(`[Beat] scrollDrift completed in ${finalElapsed}ms (${burstCount} bursts)`);
+  console.log(`[Beat] scrollDrift completed in ${finalElapsed}ms (${burstCount} bursts, ${scrollBackCount} scroll-backs)`);
   return finalElapsed;
 }
 
