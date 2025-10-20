@@ -1221,18 +1221,17 @@ Paused
       };
 
       // Update confirmation page to use real CSV data
-      const originalUpdateConfirmationPage = updateConfirmationPage;
       updateConfirmationPage = () => {
         const mockScenesCount = document.querySelectorAll('.website-target-row').length || 1;
-        const currentCredits = 10000; // Mock current balance
+        const currentCredits = 1000; // Current credit balance
 
         // Use real CSV data if available, otherwise use mock data
-        const csvEntries = csvData.rows || 1250;
-        const csvFilename = csvData.filename || 'prospects_list_q3.csv';
+        const csvEntries = csvData.rows || 0;
+        const csvFilename = csvData.filename || 'No CSV uploaded';
 
         // Update CSV info
         document.getElementById('confirmCsvFileName').textContent = csvFilename;
-        document.getElementById('confirmCsvEntries').textContent = `${csvEntries.toLocaleString()} entries`;
+        document.getElementById('confirmCsvEntries').textContent = csvEntries > 0 ? `${csvEntries.toLocaleString()} entries` : 'Upload CSV to see entries';
 
         // Calculate campaign metrics
         const totalVideos = csvEntries * mockScenesCount;
