@@ -24,6 +24,10 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
   const faceMeta = await ffprobeJson(faceCfg.path);
   const faceDur = parseFloat(faceMeta.format?.duration || '0');
 
+  // Check if facecam has audio stream
+  const faceHasAudio = faceMeta.streams?.some(s => s.codec_type === 'audio');
+  console.log(`[overlayFacecam] Facecam has audio: ${faceHasAudio}`);
+
   const needPadSec = Math.max(0, bgDur - faceDur);
   const startOffset = Math.max(0, faceCfg.startOffsetSec || 0);
 
@@ -35,28 +39,46 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
     ? `,tpad=start_mode=clone:start_duration=${startOffset}`
     : '';
 
-  const audioChain = startOffset > 0
-    ? `[1:a]adelay=${Math.floor(startOffset * 1000)}:all=1,apad[aud];`
-    : `[1:a]apad[aud];`;
+  // Build filter based on whether facecam has audio
+  let filter, mapArgs;
 
-  const filter = [
-    `[1:v]setpts=PTS-STARTPTS${vDelay},scale=${pipW}:-1,setsar=1${vPad}[cam];`,
-    audioChain,
-    `[0:v][cam]overlay=${x}:${y}:eval=frame[vout]`
-  ].join('');
+  if (faceHasAudio) {
+    // Facecam has audio - use original logic
+    const audioChain = startOffset > 0
+      ? `[1:a]adelay=${Math.floor(startOffset * 1000)}:all=1,apad[aud];`
+      : `[1:a]apad[aud];`;
 
-  await ffmpeg([
+    filter = [
+      `[1:v]setpts=PTS-STARTPTS${vDelay},scale=${pipW}:-1,setsar=1${vPad}[cam];`,
+      audioChain,
+      `[0:v][cam]overlay=${x}:${y}:eval=frame[vout]`
+    ].join('');
+
+    mapArgs = ['-map', '[vout]', '-map', '[aud]'];
+  } else {
+    // Facecam has no audio - video overlay only
+    filter = [
+      `[1:v]setpts=PTS-STARTPTS${vDelay},scale=${pipW}:-1,setsar=1${vPad}[cam];`,
+      `[0:v][cam]overlay=${x}:${y}:eval=frame[vout]`
+    ].join('');
+
+    mapArgs = ['-map', '[vout]', '-map', '0:a?']; // Use background audio if available
+  }
+
+  const ffmpegArgs = [
     '-i', bgPath,
     '-i', faceCfg.path,
     '-filter_complex', filter,
-    '-map', '[vout]', '-map', '[aud]',
+    ...mapArgs,
     '-c:v', 'libx264', '-profile:v', 'high', '-level', '4.1',
     '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '128k', '-ar', '48000',
     '-movflags', '+faststart',
     '-shortest',
     out
-  ]);
+  ];
+
+  await ffmpeg(ffmpegArgs);
 
   return out;
 }

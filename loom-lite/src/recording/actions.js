@@ -1,6 +1,11 @@
 // Tiny action DSL implementations
+const { normalizeUrl } = require('../utils/urlNormalizer');
+
 async function doGoto(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  // Normalize URL to ensure it has a protocol (https:// or http://)
+  const normalizedUrl = normalizeUrl(url);
+  console.log(`[doGoto] Navigating to: ${normalizedUrl}${url !== normalizedUrl ? ` (normalized from: ${url})` : ''}`);
+  await page.goto(normalizedUrl, { waitUntil: 'domcontentloaded' });
 }
 
 async function doWait(page, ms) {

@@ -900,12 +900,12 @@ Paused
           launchBtn.disabled = true;
 
           try {
-            // Process each CSV row
-            for (let rowIndex = 0; rowIndex < csvData.data.length; rowIndex++) {
-              const csvRow = csvData.data[rowIndex];
+            // Concurrency control: Process videos in parallel batches
+            // Free tier: 1, $20/month: 3, $200/month: 20
+            const BROWSERLESS_CONCURRENCY = 1; // Default to free tier, can be configured later
 
-              // Update progress
-              launchBtn.innerHTML = `<span class="material-icons animate-spin mr-2">autorenew</span>Rendering video ${rowIndex + 1} of ${totalVideos}...`;
+            // Helper function to render a single video
+            const renderVideo = async (rowIndex, csvRow) => {
               console.log(`Rendering video ${rowIndex + 1} of ${totalVideos}`);
 
               // Build scenes for this specific CSV row
@@ -939,7 +939,7 @@ Paused
 
               if (scenes.length === 0) {
                 console.warn(`Skipping row ${rowIndex + 1} - no valid scenes`);
-                continue;
+                return null;
               }
 
               // Create unique title for this video
@@ -972,32 +972,61 @@ Paused
               const configBlob = new Blob([JSON.stringify(config)], { type: 'application/json' });
               formData.append('config', configBlob, 'config.json');
 
-              try {
-                // Render this video
-                const response = await fetch('/api/render', {
-                  method: 'POST',
-                  body: formData
-                });
+              // Render this video
+              const response = await fetch('/api/render', {
+                method: 'POST',
+                body: formData
+              });
 
-                const result = await response.json();
+              const result = await response.json();
 
-                if (result.ok) {
-                  console.log(`Video ${rowIndex + 1} rendered successfully:`, result.finalUrl);
-                  results.push({
-                    index: rowIndex + 1,
-                    url: result.finalUrl,
-                    poster: result.posterUrl
-                  });
-                } else {
-                  throw new Error(result.error || 'Rendering failed');
-                }
-              } catch (error) {
-                console.error(`Error rendering video ${rowIndex + 1}:`, error);
-                errors.push({
+              if (result.ok) {
+                console.log(`Video ${rowIndex + 1} rendered successfully:`, result.finalUrl);
+                return {
                   index: rowIndex + 1,
-                  error: error.message
-                });
+                  url: result.finalUrl,
+                  poster: result.posterUrl
+                };
+              } else {
+                throw new Error(result.error || 'Rendering failed');
               }
+            };
+
+            // Process CSV rows in parallel batches
+            for (let i = 0; i < csvData.data.length; i += BROWSERLESS_CONCURRENCY) {
+              const batch = csvData.data.slice(i, i + BROWSERLESS_CONCURRENCY);
+              const batchNumber = Math.floor(i / BROWSERLESS_CONCURRENCY) + 1;
+              const totalBatches = Math.ceil(csvData.data.length / BROWSERLESS_CONCURRENCY);
+
+              // Update progress for this batch
+              const batchStart = i + 1;
+              const batchEnd = Math.min(i + BROWSERLESS_CONCURRENCY, totalVideos);
+              launchBtn.innerHTML = `<span class="material-icons animate-spin mr-2">autorenew</span>Rendering videos ${batchStart}-${batchEnd} of ${totalVideos} (batch ${batchNumber}/${totalBatches})...`;
+
+              // Process batch in parallel
+              const batchPromises = batch.map((csvRow, batchIndex) => {
+                const rowIndex = i + batchIndex;
+                return renderVideo(rowIndex, csvRow)
+                  .catch(error => {
+                    console.error(`Error rendering video ${rowIndex + 1}:`, error);
+                    errors.push({
+                      index: rowIndex + 1,
+                      error: error.message
+                    });
+                    return null;
+                  });
+              });
+
+              const batchResults = await Promise.all(batchPromises);
+
+              // Collect successful results
+              batchResults.forEach(result => {
+                if (result) {
+                  results.push(result);
+                }
+              });
+
+              console.log(`Batch ${batchNumber}/${totalBatches} complete. Success: ${batchResults.filter(r => r).length}, Failed: ${batchResults.filter(r => !r).length}`);
             }
 
             // Show results

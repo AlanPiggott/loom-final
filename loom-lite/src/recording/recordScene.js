@@ -2,21 +2,54 @@ const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
 const { doGoto, doWait, doClickText, doHighlight, doScroll } = require('./actions');
+const { retryWithBackoff } = require('../utils/retryWithBackoff');
 
 function toMs(sec) { return Math.max(0, Math.floor(sec * 1000)); }
+
+// Browserless.io API key - REQUIRED environment variable
+const BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY || '2TGiNxRQiIe1Ujqc0a9b59a0a1936d8893b70fec46d01c4ab';
+if (!BROWSERLESS_API_KEY) {
+  throw new Error('BROWSERLESS_API_KEY environment variable is required');
+}
 
 async function recordScene(scene, ctx) {
   const { w, h, fps, workDir } = ctx;
   const sceneDir = path.join(workDir);
   if (!fs.existsSync(sceneDir)) fs.mkdirSync(sceneDir, { recursive: true });
-  const browser = await chromium.launch({
+
+  // Properly format launch arguments for browserless.io v2 API
+  const launchArgs = {
     headless: true,
     args: [
       `--window-size=${w},${h}`,
       '--force-device-scale-factor=1',
       '--disable-renderer-backgrounding',
-      '--autoplay-policy=no-user-gesture-required'
+      '--autoplay-policy=no-user-gesture-required',
+      '--disable-blink-features=AutomationControlled', // Anti-detection
+      '--disable-dev-shm-usage', // Prevent shared memory issues
+      '--no-sandbox' // Required for cloud environments
     ]
+  };
+
+  // Use v2 API format with JSON-encoded launch parameter
+  const browserlessUrl = `wss://production-sfo.browserless.io?token=${BROWSERLESS_API_KEY}&launch=${encodeURIComponent(JSON.stringify(launchArgs))}`;
+
+  console.log(`[recordScene] Connecting to browserless.io for scene: ${scene.id} (${w}x${h})`);
+
+  // Wrap browserless.io connection in retry logic to handle rate limiting
+  const browser = await retryWithBackoff(async () => {
+    // Use connectOverCDP for better compatibility with Playwright
+    const browserInstance = await chromium.connectOverCDP(browserlessUrl, {
+      timeout: 60000 // 60 second timeout for connection
+    });
+    console.log(`[recordScene] Connected successfully to browserless.io via CDP`);
+    return browserInstance;
+  }, {
+    // Retry all errors (including 429 rate limiting)
+    shouldRetry: (error) => {
+      // Retry on all errors - the retryWithBackoff utility handles logging
+      return true;
+    }
   });
 
   const context = await browser.newContext({
@@ -24,6 +57,7 @@ async function recordScene(scene, ctx) {
     deviceScaleFactor: 1,
     recordVideo: { dir: sceneDir, size: { width: w, height: h } }
   });
+  console.log(`[recordScene] Browser context created with viewport ${w}x${h}, recording to: ${sceneDir}`);
 
   const page = await context.newPage();
   const video = await page.video();
@@ -57,14 +91,40 @@ async function recordScene(scene, ctx) {
   // Fill the rest of the scene
   if (remaining > 0) await page.waitForTimeout(remaining);
 
-  await context.close(); // this finalizes the .webm
+  console.log(`[recordScene] Scene recording complete, closing context and browser...`);
+  await context.close(); // this finalizes the .webm and downloads it from browserless.io
   await browser.close();
 
-  const webmPath = await video.path();
-  // Give it a friendly name in the same folder
-  const niceName = path.join(sceneDir, `${scene.id}.webm`);
-  if (webmPath !== niceName) fs.renameSync(webmPath, niceName);
-  return niceName;
+  // Download and validate video file
+  try {
+    const webmPath = await video.path();
+    console.log(`[recordScene] Video downloaded from browserless.io to: ${webmPath}`);
+
+    // Verify the video file actually exists
+    if (!fs.existsSync(webmPath)) {
+      throw new Error(`Video file not found at path: ${webmPath}`);
+    }
+
+    // Check file size to ensure it's not empty
+    const stats = fs.statSync(webmPath);
+    if (stats.size === 0) {
+      throw new Error(`Video file is empty: ${webmPath}`);
+    }
+    console.log(`[recordScene] Video file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+
+    // Give it a friendly name in the same folder
+    const niceName = path.join(sceneDir, `${scene.id}.webm`);
+    if (webmPath !== niceName) {
+      fs.renameSync(webmPath, niceName);
+      console.log(`[recordScene] Video renamed to: ${niceName}`);
+    }
+
+    console.log(`[recordScene] Scene ${scene.id} saved successfully`);
+    return niceName;
+  } catch (error) {
+    console.error(`[recordScene] Error processing video:`, error.message);
+    throw new Error(`Failed to save video for scene ${scene.id}: ${error.message}`);
+  }
 }
 
 module.exports = { recordScene };
