@@ -1,0 +1,14 @@
+{
+  "watch": ["src"],
+  "ignore": [
+    "campaigns/**",
+    "work/**",
+    "*.log",
+    "*.mp4",
+    "*.webm",
+    "*.jpg",
+    "*.png"
+  ],
+  "ext": "js,json",
+  "exec": "node src/server.js"
+}

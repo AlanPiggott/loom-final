@@ -837,10 +837,280 @@ Paused
         });
       }
 
-      const handleLaunch = () => {
+      const handleLaunch = async () => {
         console.log('Launch campaign clicked');
-        // TODO: Add campaign launch logic
-        closeWizard();
+
+        // Validate required fields
+        if (!uploadedVideo) {
+          alert('Please upload a webcam video');
+          currentStep = 1;
+          updateStepUI();
+          return;
+        }
+
+        const campaignName = document.getElementById('campaignName').value.trim();
+        if (!campaignName) {
+          alert('Please enter a campaign name');
+          return;
+        }
+
+        // Analyze scene configurations to determine if we need multiple videos
+        const sceneRows = document.querySelectorAll('.website-target-row');
+        let usesCSV = false;
+        let csvColumnMappings = []; // Track which columns are used for each scene
+
+        sceneRows.forEach((row, index) => {
+          const typeSelect = row.querySelector('.entry-type-select');
+          const urlInput = row.querySelector('.url-input');
+          const durationInput = row.querySelector('.duration-input');
+
+          const entryType = typeSelect.value;
+          const duration = parseInt(durationInput.value) || 30;
+
+          if (entryType === 'csv') {
+            usesCSV = true;
+            const columnName = urlInput.value;
+            csvColumnMappings.push({
+              sceneIndex: index,
+              columnName: columnName,
+              duration: duration
+            });
+          } else if (entryType === 'manual') {
+            csvColumnMappings.push({
+              sceneIndex: index,
+              manualUrl: urlInput.value.trim(),
+              duration: duration
+            });
+          }
+        });
+
+        // If CSV mode, generate multiple videos (one per CSV row)
+        if (usesCSV) {
+          if (!csvData.data || csvData.data.length === 0) {
+            alert('Please upload a CSV file with data');
+            return;
+          }
+
+          const totalVideos = csvData.data.length;
+          const results = [];
+          const errors = [];
+
+          const launchBtn = document.getElementById('launchCampaignBtn');
+          const originalText = launchBtn.innerHTML;
+          launchBtn.disabled = true;
+
+          try {
+            // Process each CSV row
+            for (let rowIndex = 0; rowIndex < csvData.data.length; rowIndex++) {
+              const csvRow = csvData.data[rowIndex];
+
+              // Update progress
+              launchBtn.innerHTML = `<span class="material-icons animate-spin mr-2">autorenew</span>Rendering video ${rowIndex + 1} of ${totalVideos}...`;
+              console.log(`Rendering video ${rowIndex + 1} of ${totalVideos}`);
+
+              // Build scenes for this specific CSV row
+              const scenes = [];
+              csvColumnMappings.forEach((mapping, sceneIdx) => {
+                let url;
+                if (mapping.columnName) {
+                  // CSV mode - get URL from CSV data
+                  const columnIndex = csvData.columns.indexOf(mapping.columnName);
+                  if (columnIndex >= 0) {
+                    url = csvRow[columnIndex];
+                  }
+                } else if (mapping.manualUrl) {
+                  // Manual mode - use the same URL for all videos
+                  url = mapping.manualUrl;
+                }
+
+                if (url) {
+                  scenes.push({
+                    id: `scene-${sceneIdx + 1}`,
+                    url: url,
+                    durationSec: mapping.duration,
+                    actions: [
+                      { type: 'goto' },
+                      { type: 'wait', ms: 2000 },
+                      { type: 'scroll', pattern: 'slow-drift', ms: Math.max(1000, (mapping.duration - 3) * 1000) }
+                    ]
+                  });
+                }
+              });
+
+              if (scenes.length === 0) {
+                console.warn(`Skipping row ${rowIndex + 1} - no valid scenes`);
+                continue;
+              }
+
+              // Create unique title for this video
+              const videoTitle = `${campaignName}-video-${rowIndex + 1}`;
+
+              // Build config for this video
+              const config = {
+                title: videoTitle,
+                output: {
+                  width: 1280,
+                  height: 720,
+                  fps: 30,
+                  facecam: {
+                    path: './facecam.mp4',
+                    pip: {
+                      width: 320,
+                      margin: 24,
+                      corner: 'bottom-right'
+                    },
+                    startOffsetSec: 0.5,
+                    endPadMode: 'freeze'
+                  }
+                },
+                scenes: scenes
+              };
+
+              // Create FormData for this video
+              const formData = new FormData();
+              formData.append('facecam', uploadedVideo);
+              const configBlob = new Blob([JSON.stringify(config)], { type: 'application/json' });
+              formData.append('config', configBlob, 'config.json');
+
+              try {
+                // Render this video
+                const response = await fetch('/api/render', {
+                  method: 'POST',
+                  body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.ok) {
+                  console.log(`Video ${rowIndex + 1} rendered successfully:`, result.finalUrl);
+                  results.push({
+                    index: rowIndex + 1,
+                    url: result.finalUrl,
+                    poster: result.posterUrl
+                  });
+                } else {
+                  throw new Error(result.error || 'Rendering failed');
+                }
+              } catch (error) {
+                console.error(`Error rendering video ${rowIndex + 1}:`, error);
+                errors.push({
+                  index: rowIndex + 1,
+                  error: error.message
+                });
+              }
+            }
+
+            // Show results
+            if (results.length > 0) {
+              let message = `Successfully rendered ${results.length} of ${totalVideos} videos!\n\n`;
+              results.forEach(r => {
+                message += `Video ${r.index}: ${r.url}\n`;
+              });
+
+              if (errors.length > 0) {
+                message += `\n${errors.length} videos failed:\n`;
+                errors.forEach(e => {
+                  message += `Video ${e.index}: ${e.error}\n`;
+                });
+              }
+
+              alert(message);
+
+              // Open first video
+              if (results[0]) {
+                window.open(results[0].url, '_blank');
+              }
+
+              closeWizard();
+            } else {
+              throw new Error('All videos failed to render');
+            }
+
+          } finally {
+            // Restore button state
+            launchBtn.disabled = false;
+            launchBtn.innerHTML = originalText;
+          }
+
+        } else {
+          // Manual mode - single video (original behavior)
+          const scenes = [];
+          csvColumnMappings.forEach((mapping, index) => {
+            if (mapping.manualUrl) {
+              scenes.push({
+                id: `scene-${index + 1}`,
+                url: mapping.manualUrl,
+                durationSec: mapping.duration,
+                actions: [
+                  { type: 'goto' },
+                  { type: 'wait', ms: 2000 },
+                  { type: 'scroll', pattern: 'slow-drift', ms: Math.max(1000, (mapping.duration - 3) * 1000) }
+                ]
+              });
+            }
+          });
+
+          if (scenes.length === 0) {
+            alert('Please configure at least one website target');
+            currentStep = 2;
+            updateStepUI();
+            return;
+          }
+
+          const config = {
+            title: campaignName,
+            output: {
+              width: 1280,
+              height: 720,
+              fps: 30,
+              facecam: {
+                path: './facecam.mp4',
+                pip: {
+                  width: 320,
+                  margin: 24,
+                  corner: 'bottom-right'
+                },
+                startOffsetSec: 0.5,
+                endPadMode: 'freeze'
+              }
+            },
+            scenes: scenes
+          };
+
+          const formData = new FormData();
+          formData.append('facecam', uploadedVideo);
+          const configBlob = new Blob([JSON.stringify(config)], { type: 'application/json' });
+          formData.append('config', configBlob, 'config.json');
+
+          const launchBtn = document.getElementById('launchCampaignBtn');
+          const originalText = launchBtn.innerHTML;
+          launchBtn.disabled = true;
+          launchBtn.innerHTML = '<span class="material-icons animate-spin mr-2">autorenew</span>Rendering...';
+
+          try {
+            const response = await fetch('/api/render', {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+              console.log('Campaign rendered successfully:', result);
+              alert(`Campaign rendered successfully!\n\nFinal video: ${result.finalUrl}\nPoster: ${result.posterUrl}`);
+              window.open(result.finalUrl, '_blank');
+              closeWizard();
+            } else {
+              throw new Error(result.error || 'Rendering failed');
+            }
+          } catch (error) {
+            console.error('Error rendering campaign:', error);
+            alert(`Error rendering campaign: ${error.message}`);
+          } finally {
+            launchBtn.disabled = false;
+            launchBtn.innerHTML = originalText;
+          }
+        }
       };
 
       if (launchBtn) {
