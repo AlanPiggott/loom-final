@@ -153,19 +153,16 @@ class HumanMotionEngine {
       const styleEl = document.createElement('style');
       styleEl.id = 'hme-cursor-styles';
       styleEl.textContent = `
-        html, body, * { cursor: none !important; }
+        * { cursor: none !important; }
         #hme-cursor {
           position: fixed;
-          left: 0;
-          top: 0;
+          left: ${startPos.x}px;
+          top: ${startPos.y}px;
           width: 20px;
           height: 20px;
-          transform: translate(${startPos.x}px, ${startPos.y}px);
           z-index: 2147483647;
           pointer-events: none;
-          transition: none;
           opacity: 1;
-          will-change: transform;
         }
         #hme-cursor svg {
           position: absolute;
@@ -174,13 +171,6 @@ class HumanMotionEngine {
           width: 20px;
           height: 20px;
           filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-        }
-        #hme-cursor.clicking {
-          animation: click-pulse 0.15s ease-out;
-        }
-        @keyframes click-pulse {
-          0%, 100% { transform: translate(var(--x), var(--y)) scale(1); }
-          50% { transform: translate(var(--x), var(--y)) scale(0.9); }
         }
       `;
       document.head.appendChild(styleEl);
@@ -202,11 +192,6 @@ class HumanMotionEngine {
       `;
 
       document.body.appendChild(el);
-
-      // Set initial position
-      el.style.transform = `translate(${startPos.x}px, ${startPos.y}px)`;
-      el.style.setProperty('--x', `${startPos.x}px`);
-      el.style.setProperty('--y', `${startPos.y}px`);
 
       window.__hme = { el, x: startPos.x, y: startPos.y };
     }, this.currentPos);
@@ -357,9 +342,8 @@ class HumanMotionEngine {
     await this.page.evaluate(async (frames) => {
       const cur = window.__hme.el;
       for (const f of frames) {
-        cur.style.transform = `translate(${f.x}px, ${f.y}px)`;
-        cur.style.setProperty('--x', `${f.x}px`);
-        cur.style.setProperty('--y', `${f.y}px`);
+        cur.style.left = `${f.x}px`;
+        cur.style.top = `${f.y}px`;
         window.__hme.x = f.x;
         window.__hme.y = f.y;
         await new Promise(r => requestAnimationFrame(r));
