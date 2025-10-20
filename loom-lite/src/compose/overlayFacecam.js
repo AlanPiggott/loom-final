@@ -57,8 +57,8 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
       // Step 1: Prepare facecam - crop to square, scale, format RGBA
       `[1:v]setpts=PTS-STARTPTS${vDelay},crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba[cam_raw];`,
 
-      // Step 2: Load and scale mask to match PiP size, split for cam and shadow
-      `[2:v]scale=${pipW}:${pipW},format=gray,split[mask1][mask2];`,
+      // Step 2: Load and scale mask to match PiP size, extract alpha as grayscale, split for cam and shadow
+      `[2:v]scale=${pipW}:${pipW},format=rgba,alphaextract,split[mask1][mask2];`,
 
       // Step 3: Apply mask to create rounded facecam
       `[cam_raw][mask1]alphamerge[cam];`,
@@ -82,8 +82,8 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
       // Step 1: Prepare facecam - crop to square, scale, format RGBA
       `[1:v]setpts=PTS-STARTPTS${vDelay},crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba[cam_raw];`,
 
-      // Step 2: Load and scale mask to match PiP size, split for cam and shadow
-      `[2:v]scale=${pipW}:${pipW},format=gray,split[mask1][mask2];`,
+      // Step 2: Load and scale mask to match PiP size, extract alpha as grayscale, split for cam and shadow
+      `[2:v]scale=${pipW}:${pipW},format=rgba,alphaextract,split[mask1][mask2];`,
 
       // Step 3: Apply mask to create rounded facecam
       `[cam_raw][mask1]alphamerge[cam];`,
