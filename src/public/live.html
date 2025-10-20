@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wizard Test</title>
+  </head>
+  <body>
+    <button data-open-campaign-wizard>Open</button>
+    <button data-close-campaign-wizard>Close</button>
+    <div id="campaignWizard" class="hidden">
+      Wizard body
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const wizard = document.getElementById('campaignWizard');
+        const body = document.body;
+        if (!wizard) return;
+        const openWizard = event => {
+          if (event) event.preventDefault();
+          wizard.classList.remove('hidden');
+          body.classList.add('overflow-hidden');
+        };
+        const closeWizard = event => {
+          if (event) event.preventDefault();
+          wizard.classList.add('hidden');
+          body.classList.remove('overflow-hidden');
+        };
+        document.addEventListener('click', event => {
+          const openTrigger = event.target.closest('[data-open-campaign-wizard]');
+          if (openTrigger) return openWizard(event);
+          const closeTrigger = event.target.closest('[data-close-campaign-wizard]');
+          if (closeTrigger) return closeWizard(event);
+        });
+      });
+    </script>
+  </body>
+</html>

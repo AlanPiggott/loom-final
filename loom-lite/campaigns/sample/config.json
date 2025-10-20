@@ -1,0 +1,42 @@
+{
+  "title": "sample",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 320,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "startOffsetSec": 0.5,
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+      "durationSec": 15,
+      "actions": [
+        { "type": "goto" },
+        { "type": "wait", "ms": 2000 },
+        { "type": "scroll", "pattern": "slow-drift", "ms": 9000 },
+        { "type": "highlight", "text": "JavaScript" }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "url": "https://news.ycombinator.com",
+      "durationSec": 12,
+      "actions": [
+        { "type": "goto" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "scroll", "pattern": "pause-peek", "ms": 7000 },
+        { "type": "highlight", "text": "Hacker" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VidGen Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0066FF",
+                        "background-light": "#F8FAFC",
+                        "background-dark": "#1E293B",
+                        "foreground-light": "#FFFFFF",
+                        "foreground-dark": "#334155",
+                        "text-light": "#334155",
+                        "text-dark": "#CBD5E1",
+                        "subtext-light": "#64748B",
+                        "subtext-dark": "#94A3B8",
+                        "border-light": "#E2E8F0",
+                        "border-dark": "#334155",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        .material-icons {
+            font-size: 20px;
+        }
+
+        /* Dashboard Animations */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slideDown {
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .animate-slideUp {
+            animation: slideUp 0.6s ease-out backwards;
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .animate-slideDown,
+            .animate-slideUp {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-display bg-gradient-to-br from-background-light via-gray-50 to-blue-50/30 dark:from-background-dark dark:via-gray-900 dark:to-blue-900/10 text-text-light dark:text-text-dark overflow-hidden">
+<div class="flex h-screen">
+<!-- Enhanced Sidebar with gradient and shadow -->
+<aside class="w-64 bg-gradient-to-b from-foreground-light to-gray-50/50 dark:from-foreground-dark dark:to-gray-800/30 flex flex-col p-5 border-r border-border-light/50 dark:border-border-dark/50 shadow-xl animate-slideInLeft">
+<!-- Logo with glow effect -->
+<div class="flex items-center space-x-2 p-3 mb-10 group">
+<div class="relative">
+<svg class="h-9 w-9 text-primary transition-all duration-300 group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.01 14.01L7.5 12.5l1.41-1.41 2.09 2.08 4.6-4.6L17.01 10l-6.02 6.01z" opacity="0.3"></path><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2.01-8.5l-2.09 2.09 1.41 1.41 2.09-2.09 4.6-4.6-1.41-1.41-4.6 4.6z"></path></svg>
+<div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<span class="text-2xl font-bold text-text-light dark:text-text-dark tracking-tight">VidGen</span>
+</div>
+
+<!-- Enhanced Navigation -->
+<nav class="flex-1 space-y-1">
+<!-- Dashboard - Active -->
+<a class="flex items-center p-3 rounded-xl bg-gradient-to-r from-primary to-blue-600 text-white font-semibold shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-2 ring-offset-background-light dark:ring-offset-foreground-dark transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group" href="#">
+<span class="material-icons mr-3 transition-transform duration-300 group-hover:scale-110">dashboard</span>
+Dashboard
+</a>
+
+<!-- Campaigns -->
+<a class="flex items-center p-3 rounded-xl text-subtext-light dark:text-subtext-dark hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-700 dark:hover:to-gray-700/50 hover:text-text-light dark:hover:text-text-dark hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 group" href="#">
+<span class="material-icons mr-3 transition-transform duration-300 group-hover:scale-110">campaign</span>
+Campaigns
+</a>
+
+<!-- Integrations -->
+<a class="flex items-center p-3 rounded-xl text-subtext-light dark:text-subtext-dark hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-700 dark:hover:to-gray-700/50 hover:text-text-light dark:hover:text-text-dark hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 group" href="#">
+<span class="material-icons mr-3 transition-transform duration-300 group-hover:scale-110">integration_instructions</span>
+Integrations
+</a>
+
+<!-- Settings -->
+<a class="flex items-center p-3 rounded-xl text-subtext-light dark:text-subtext-dark hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-700 dark:hover:to-gray-700/50 hover:text-text-light dark:hover:text-text-dark hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 group" href="#">
+<span class="material-icons mr-3 transition-transform duration-300 group-hover:scale-110">settings</span>
+Settings
+</a>
+</nav>
+
+<!-- Enhanced User Profile Card -->
+<div class="mt-auto">
+<div class="bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700/50 dark:to-gray-800/30 p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between cursor-pointer hover:-translate-y-1 group border border-border-light/30 dark:border-border-dark/30">
+<div class="flex items-center flex-1">
+<img alt="Jane Doe's avatar" class="w-10 h-10 rounded-full mr-3 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgtFSAMjI1OMobS9YuS53VVD8IrSoBH5K8m4KI4BNplzapPFrpuyEgpIQ9iNcn1GVUiaiNG_aslTzQme-6ZxQEg-pXGMcY2RUAvUdlZPh-9bVnAZQrRzn8-G90i05VOKirR9y4SDk8HSssMnXA8J5rfG7mXi-HsPcqBQrTqzmhGNOmk2ER-WEZa62EY5re6lj9_2Y5X6h5vcKpDtJoVTlrxgIprUqzjkpMNbw2mNNMbbZky-r3DXYHQY6aVqtXjLCmtQsMTQm3Z58"/>
+<div>
+<p class="font-bold text-sm text-text-light dark:text-text-dark leading-tight">Jane Doe</p>
+<p class="text-xs text-subtext-light dark:text-subtext-dark mt-0.5">Acme Inc.</p>
+</div>
+</div>
+<span class="material-icons text-subtext-light dark:text-subtext-dark group-hover:translate-x-1 transition-transform duration-300">arrow_forward</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 p-8 overflow-y-auto animate-fadeIn">
+<!-- Enhanced Header -->
+<header class="flex justify-between items-center mb-10 animate-slideDown">
+<div>
+<h1 class="text-4xl font-bold text-text-light dark:text-text-dark tracking-tight mb-1">Dashboard</h1>
+<p class="text-subtext-light dark:text-subtext-dark text-base">Welcome back, <span class="font-semibold text-text-light dark:text-text-dark">Jane</span>. Let's create some magic. ✨</p>
+</div>
+<div class="flex items-center space-x-3">
+<!-- Enhanced Help Link -->
+<a class="flex items-center text-subtext-light dark:text-subtext-dark font-medium px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-text-light dark:hover:text-text-dark transition-all duration-300 group" href="#">
+<span class="material-icons mr-2 transition-transform duration-300 group-hover:scale-110">help_outline</span>
+Help &amp; Support
+</a>
+<!-- Enhanced New Campaign Button -->
+<button data-open-campaign-wizard type="button" class="bg-gradient-to-r from-primary to-blue-600 text-white font-bold py-3 px-6 rounded-xl flex items-center shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 active:scale-100 group">
+<span class="material-icons mr-2 transition-transform duration-300 group-hover:rotate-90">add</span>
+New Campaign
+</button>
+</div>
+</header>
+
+<!-- Enhanced Hero/CTA Section -->
+<div class="relative bg-foreground-light dark:bg-foreground-dark border-2 border-dashed border-border-light dark:border-border-dark rounded-2xl p-12 text-center mb-8 shadow-xl transition-all duration-300 overflow-hidden group animate-slideUp">
+<!-- Decorative background elements -->
+<div class="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-800/50 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+<div class="relative z-10">
+<h2 class="text-3xl font-bold mb-3 text-text-light dark:text-text-dark tracking-tight">Create Your First Campaign</h2>
+<p class="text-subtext-light dark:text-subtext-dark mb-8 text-lg max-w-2xl mx-auto leading-relaxed">Ready to launch? Start by uploading a prospect list to generate your personalized videos.</p>
+<button data-open-campaign-wizard type="button" class="bg-gradient-to-r from-primary to-blue-600 text-white font-bold py-4 px-8 rounded-xl flex items-center mx-auto shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-110 hover:-translate-y-1 active:scale-105 group/btn">
+<span class="material-icons mr-3 text-2xl transition-transform duration-300 group-hover/btn:rotate-90">add_circle</span>
+<span class="text-lg">Start New Campaign</span>
+</button>
+</div>
+</div>
+<!-- Enhanced Activity Table -->
+<div class="animate-slideUp" style="animation-delay: 0.6s">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-bold text-text-light dark:text-text-dark tracking-tight">Recent Activity</h2>
+
+<!-- Search and Filter Controls -->
+<div class="flex items-center space-x-4">
+<!-- Search Input -->
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-subtext-light dark:text-subtext-dark text-lg">search</span>
+<input type="text" placeholder="Search campaigns..." class="pl-10 pr-4 py-2 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark placeholder-subtext-light dark:placeholder-subtext-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 w-64 shadow-sm"/>
+</div>
+
+<!-- Active Only Filter -->
+<label class="flex items-center cursor-pointer px-4 py-2 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-300 shadow-sm">
+<input type="checkbox" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-2 focus:ring-primary/50 transition-all duration-300"/>
+<span class="ml-2 text-sm font-medium text-text-light dark:text-text-dark">Active only</span>
+</label>
+</div>
+</div>
+
+<div class="bg-gradient-to-br from-foreground-light to-gray-50/50 dark:from-foreground-dark dark:to-gray-800/30 rounded-2xl shadow-xl border border-border-light/50 dark:border-border-dark/50 overflow-hidden">
+<table class="w-full">
+<thead class="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-700/30">
+<tr>
+<th class="p-6 text-left text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest">Campaign</th>
+<th class="p-6 text-left text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest">Videos</th>
+<th class="p-6 text-left text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest">Status</th>
+<th class="p-6 text-left text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest">Date</th>
+<th class="p-6 text-center text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest">Active</th>
+<th class="p-6"></th>
+</tr>
+</thead>
+<tbody>
+<!-- Row 1 - Completed campaign with all videos sent -->
+<tr class="border-b border-border-light/50 dark:border-border-dark/50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent dark:hover:from-gray-700/30 dark:hover:to-transparent transition-all duration-300 group">
+<td class="p-6">
+<a href="#" class="font-bold text-text-light dark:text-text-dark hover:text-primary transition-colors duration-300 flex items-center group/link">
+Q4 Outreach - Tech Leads
+<span class="material-icons text-sm ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300">arrow_forward</span>
+</a>
+</td>
+<td class="p-6">
+<span class="text-sm font-semibold text-text-light dark:text-text-dark">150</span>
+</td>
+<td class="p-6">
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+Completed
+</span>
+</td>
+<td class="p-6 text-sm font-medium text-subtext-light dark:text-subtext-dark">Oct 15, 2025</td>
+<td class="p-6">
+<div class="flex justify-center">
+<!-- Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" checked class="sr-only peer"/>
+<div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-500 shadow-inner"></div>
+</label>
+</div>
+</td>
+<td class="p-6 text-right">
+<div class="flex items-center justify-end space-x-2">
+<button class="text-subtext-light dark:text-subtext-dark hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">visibility</span>
+</button>
+<button class="text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">delete_outline</span>
+</button>
+</div>
+</td>
+</tr>
+
+<!-- Row 2 - Processing campaign with mostly processing videos -->
+<tr class="border-b border-border-light/50 dark:border-border-dark/50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent dark:hover:from-gray-700/30 dark:hover:to-transparent transition-all duration-300 group">
+<td class="p-6">
+<a href="#" class="font-bold text-text-light dark:text-text-dark hover:text-primary transition-colors duration-300 flex items-center group/link">
+New LinkedIn Connections
+<span class="material-icons text-sm ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300">arrow_forward</span>
+</a>
+</td>
+<td class="p-6">
+<span class="text-sm font-semibold text-text-light dark:text-text-dark">200</span>
+</td>
+<td class="p-6">
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+In Progress
+</span>
+</td>
+<td class="p-6 text-sm font-medium text-subtext-light dark:text-subtext-dark">Oct 17, 2025</td>
+<td class="p-6">
+<div class="flex justify-center">
+<!-- Toggle Switch - Active -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" checked class="sr-only peer"/>
+<div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-500 shadow-inner"></div>
+</label>
+</div>
+</td>
+<td class="p-6 text-right">
+<div class="flex items-center justify-end space-x-2">
+<button class="text-subtext-light dark:text-subtext-dark hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">visibility</span>
+</button>
+<button class="text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">delete_outline</span>
+</button>
+</div>
+</td>
+</tr>
+
+<!-- Row 3 - Inactive campaign with mostly failed videos -->
+<tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent dark:hover:from-gray-700/30 dark:hover:to-transparent transition-all duration-300 group">
+<td class="p-6">
+<a href="#" class="font-bold text-text-light dark:text-text-dark hover:text-primary transition-colors duration-300 flex items-center group/link">
+Follow-up Sequence
+<span class="material-icons text-sm ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity duration-300">arrow_forward</span>
+</a>
+</td>
+<td class="p-6">
+<span class="text-sm font-semibold text-text-light dark:text-text-dark">50</span>
+</td>
+<td class="p-6">
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 dark:bg-gray-800/30 text-gray-700 dark:text-gray-400">
+Paused
+</span>
+</td>
+<td class="p-6 text-sm font-medium text-subtext-light dark:text-subtext-dark">Oct 10, 2025</td>
+<td class="p-6">
+<div class="flex justify-center">
+<!-- Toggle Switch - Inactive -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" class="sr-only peer"/>
+<div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-500 shadow-inner"></div>
+</label>
+</div>
+</td>
+<td class="p-6 text-right">
+<div class="flex items-center justify-end space-x-2">
+<button class="text-subtext-light dark:text-subtext-dark hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">visibility</span>
+</button>
+<button class="text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-all duration-300 hover:scale-110">
+<span class="material-icons text-lg">delete_outline</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</div>
+
+  <template id="campaignWizardTemplate">
+    <!-- Backdrop with blur -->
+    <div id="campaignWizard" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <!-- Modal with enhanced shadows and ring -->
+      <div class="bg-background-light dark:bg-foreground-dark rounded-2xl shadow-2xl ring-1 ring-black/5 w-full max-w-7xl h-[76vh] flex overflow-hidden animate-scaleIn">
+
+        <!-- Vertical Sidebar with subtle inner shadow -->
+        <div class="w-64 bg-gradient-to-b from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-800/30 border-r border-border-light dark:border-border-dark py-10 px-8 flex flex-col justify-between shadow-[inset_-1px_0_4px_rgba(0,0,0,0.05)]">
+          <div>
+            <h2 class="text-xs font-bold text-subtext-light dark:text-subtext-dark uppercase tracking-widest mb-12 letterspacing-wide">Progress</h2>
+
+            <!-- Step 1: Assets & List (Active) with gradient and enhanced shadow -->
+            <div class="step-indicator flex items-start mb-12 transition-all duration-300 cursor-pointer hover:scale-105" data-step="1">
+              <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white font-bold text-base shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-2 ring-offset-background-light dark:ring-offset-foreground-dark">
+                1
+              </div>
+              <div class="ml-4 mt-1">
+                <h3 class="text-base font-bold text-primary leading-tight">Assets &amp; List</h3>
+                <p class="text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug">Upload files</p>
+              </div>
+            </div>
+
+            <!-- Connector Line - thicker and better color -->
+            <div class="ml-6 -mt-10 mb-4 w-1 h-10 bg-gradient-to-b from-gray-300 to-gray-200 dark:from-gray-600 dark:to-gray-700 rounded-full"></div>
+
+            <!-- Step 2: Targets -->
+            <div class="step-indicator flex items-start mb-12 transition-all duration-300 cursor-pointer hover:scale-105" data-step="2">
+              <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 font-bold text-base bg-background-light dark:bg-foreground-dark">
+                2
+              </div>
+              <div class="ml-4 mt-1">
+                <h3 class="text-base font-semibold text-subtext-light dark:text-subtext-dark leading-tight">Targets</h3>
+                <p class="text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug opacity-75">Select audience</p>
+              </div>
+            </div>
+
+            <!-- Connector Line -->
+            <div class="ml-6 -mt-10 mb-4 w-1 h-10 bg-gradient-to-b from-gray-300 to-gray-200 dark:from-gray-600 dark:to-gray-700 rounded-full"></div>
+
+            <!-- Step 3: Confirm -->
+            <div class="step-indicator flex items-start transition-all duration-300 cursor-pointer hover:scale-105" data-step="3">
+              <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 font-bold text-base bg-background-light dark:bg-foreground-dark">
+                3
+              </div>
+              <div class="ml-4 mt-1">
+                <h3 class="text-base font-semibold text-subtext-light dark:text-subtext-dark leading-tight">Confirm</h3>
+                <p class="text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug opacity-75">Review &amp; launch</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help text at bottom with better styling -->
+          <div class="mt-auto pt-8 border-t border-border-light/50 dark:border-border-dark/50">
+            <p class="text-xs text-subtext-light dark:text-subtext-dark opacity-75 hover:opacity-100 transition-opacity duration-200">Need help? <span class="text-primary font-medium cursor-pointer hover:underline">Contact support</span></p>
+          </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col bg-gradient-to-br from-background-light to-gray-50/30 dark:from-foreground-dark dark:to-gray-800/20">
+          <!-- Header with better close button -->
+          <div class="flex items-center justify-between p-6 border-b border-border-light/70 dark:border-border-dark/70 bg-background-light/50 dark:bg-foreground-dark/50 backdrop-blur-sm">
+            <input
+              type="text"
+              id="campaignName"
+              placeholder="Campaign Name *"
+              class="text-2xl font-bold text-text-light dark:text-text-dark tracking-tight bg-transparent border-none focus:outline-none focus:ring-0 placeholder-subtext-light dark:placeholder-subtext-dark flex-1"
+            />
+            <button data-close-campaign-wizard type="button" class="text-subtext-light dark:text-subtext-dark hover:text-text-light dark:hover:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2 transition-all duration-300 hover:rotate-90 active:scale-95">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="p-10 flex-grow overflow-y-auto" id="wizardContent">
+            <!-- Step 1: Assets & List -->
+            <div id="step1" class="wizard-step">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+                <!-- Webcam Video Upload - Enhanced -->
+                <div class="bg-background-light dark:bg-foreground-dark border border-border-light/60 dark:border-border-dark/60 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 ring-1 ring-black/5 animate-slideInLeft">
+                  <h3 class="font-bold text-lg text-text-light dark:text-text-dark mb-1 leading-tight tracking-tight">Webcam Video <span class="text-red-500 font-semibold">*</span></h3>
+                  <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4 leading-relaxed">This video will be overlaid on the screen recording.</p>
+
+                  <!-- Upload area with enhanced interactions -->
+                  <div class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
+                    <!-- Icon with rotation animation -->
+                    <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+
+                    <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
+                    <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">MP4, max 100MB</p>
+
+                    <!-- Subtle hover gradient overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
+                  </div>
+
+                  <p class="text-xs text-red-500 mt-3 font-medium">* Required</p>
+                </div>
+
+                <!-- CSV Upload - Enhanced (with slight delay animation) -->
+                <div class="bg-background-light dark:bg-foreground-dark border border-border-light/60 dark:border-border-dark/60 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 ring-1 ring-black/5 animate-slideInRight">
+                  <h3 class="font-bold text-lg text-text-light dark:text-text-dark mb-1 leading-tight tracking-tight">Website URLs (CSV)</h3>
+                  <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4 leading-relaxed">Upload a CSV with one column of website URLs.</p>
+
+                  <!-- Upload area with enhanced interactions -->
+                  <div class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
+                    <!-- Icon with rotation animation -->
+                    <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+
+                    <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
+                    <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">CSV, max 5MB</p>
+
+                    <!-- Subtle hover gradient overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Targets -->
+            <div id="step2" class="wizard-step hidden">
+              <div class="max-w-5xl">
+                <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-2 tracking-tight">Target Websites</h2>
+                <p class="text-subtext-light dark:text-subtext-dark mb-8">Configure the websites you want to record and set the duration for each.</p>
+
+                <!-- Website Targets Container -->
+                <div id="websiteTargetsContainer" class="space-y-4 mb-6">
+                  <!-- Default row -->
+                  <div class="website-target-row flex items-center gap-4 px-1">
+                    <select class="entry-type-select flex-none w-48 px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
+                      <option value="manual">Manual Entry</option>
+                      <option value="csv">CSV Column</option>
+                    </select>
+
+                    <div class="url-input-container flex-1">
+                      <input type="text" placeholder="https://www.example.com" class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark placeholder-subtext-light dark:placeholder-subtext-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <input type="number" value="30" min="1" max="300" class="duration-input w-20 px-3 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark text-center focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+                      <span class="text-sm text-subtext-light dark:text-subtext-dark font-medium">sec</span>
+                    </div>
+
+                    <button class="remove-target-btn flex-none p-2 text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 hover:scale-110">
+                      <span class="material-icons text-lg">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Add Website Button -->
+                <button id="addWebsiteBtn" class="flex items-center text-primary font-semibold text-sm hover:text-blue-600 transition-colors duration-300 group mb-8">
+                  <span class="material-icons mr-2 group-hover:rotate-90 transition-transform duration-300">add</span>
+                  Add website
+                </button>
+
+                <!-- Total Duration -->
+                <div class="flex justify-end">
+                  <p class="text-sm text-subtext-light dark:text-subtext-dark">
+                    Total duration: <span id="totalDuration" class="font-bold text-text-light dark:text-text-dark">30s</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Confirm -->
+            <div id="step3" class="wizard-step hidden">
+              <div class="max-w-6xl h-full">
+                <div class="grid grid-cols-2 gap-8 h-full">
+                  <!-- Left: Video Preview -->
+                  <div class="flex flex-col">
+                    <div class="bg-foreground-light dark:bg-foreground-dark border border-border-light/60 dark:border-border-dark/60 rounded-2xl p-6 shadow-lg">
+                      <h3 class="text-base font-bold text-text-light dark:text-text-dark mb-4">Webcam Video Preview</h3>
+                      <div class="relative bg-black rounded-xl overflow-hidden aspect-video w-full">
+                        <video id="videoPreview" class="w-full h-full object-cover" controls>
+                          <source src="" type="video/mp4">
+                          Your browser does not support the video tag.
+                        </video>
+                        <!-- Placeholder when no video -->
+                        <div id="videoPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
+                          <span class="material-icons text-gray-600 text-6xl mb-3">videocam</span>
+                          <p class="text-gray-500 text-sm">No video uploaded yet</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Right: CSV Info & Campaign Summary -->
+                  <div class="flex flex-col space-y-6">
+                    <!-- Uploaded CSV Card -->
+                    <div class="bg-foreground-light dark:bg-foreground-dark border border-border-light/60 dark:border-border-dark/60 rounded-2xl p-6 shadow-lg">
+                      <h3 class="text-base font-bold text-text-light dark:text-text-dark mb-4">Uploaded CSV</h3>
+                      <div class="flex items-center p-4 bg-background-light dark:bg-gray-800/40 rounded-xl">
+                        <span class="material-icons text-primary text-3xl mr-4">description</span>
+                        <div>
+                          <p id="confirmCsvFileName" class="text-sm font-semibold text-text-light dark:text-text-dark mb-1">prospects_list_q3.csv</p>
+                          <p id="confirmCsvEntries" class="text-sm text-subtext-light dark:text-subtext-dark">1,250 entries</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Campaign Summary Card -->
+                    <div class="bg-foreground-light dark:bg-foreground-dark border border-border-light/60 dark:border-border-dark/60 rounded-2xl p-6 shadow-lg flex-1">
+                      <h3 class="text-base font-bold text-text-light dark:text-text-dark mb-6">Campaign Summary</h3>
+                      <div class="space-y-5">
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm text-subtext-light dark:text-subtext-dark">Videos to be generated</span>
+                          <span id="confirmTotalVideos" class="text-lg font-bold text-text-light dark:text-text-dark">1,250</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm text-subtext-light dark:text-subtext-dark">Credits this campaign will use</span>
+                          <span id="confirmCreditsUsed" class="text-lg font-bold text-text-light dark:text-text-dark">1,250</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-border-light/50 dark:border-border-dark/50">
+                          <span class="text-sm font-semibold text-subtext-light dark:text-subtext-dark">Credits remaining</span>
+                          <span id="confirmCreditsRemaining" class="text-2xl font-bold text-primary">8,750</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation Buttons -->
+          <div class="border-t border-border-light/70 dark:border-border-dark/70 p-6 bg-background-light/50 dark:bg-foreground-dark/50 flex justify-between">
+            <button id="prevStepBtn" class="hidden px-6 py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-text-light dark:text-text-dark font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 hover:scale-105">
+              Previous
+            </button>
+            <div class="flex-1"></div>
+            <button id="nextStepBtn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-blue-600 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105">
+              Next
+            </button>
+            <button id="launchCampaignBtn" class="hidden px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105">
+              Launch Campaign
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .animate-scaleIn {
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    .animate-slideInLeft {
+      animation: slideInLeft 0.4s ease-out;
+    }
+
+    .animate-slideInRight {
+      animation: slideInRight 0.4s ease-out 0.1s backwards;
+    }
+
+    /* Respect reduced motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-fadeIn,
+      .animate-scaleIn,
+      .animate-slideInLeft,
+      .animate-slideInRight {
+        animation: none;
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const template = document.getElementById('campaignWizardTemplate');
+      let wizard = document.getElementById('campaignWizard');
+      const body = document.body;
+
+      if (!wizard && template) {
+        document.body.insertAdjacentHTML('beforeend', template.innerHTML.trim());
+        wizard = document.getElementById('campaignWizard');
+        console.debug('Campaign wizard injected from template');
+      }
+
+      if (!wizard) {
+        console.warn('Campaign wizard element not found; skipping modal wiring.');
+        return;
+      }
+
+      const openWizard = event => {
+        if (event) event.preventDefault();
+        wizard.classList.remove('hidden');
+        body.classList.add('overflow-hidden');
+
+        // Focus on campaign name input
+        setTimeout(() => {
+          const campaignNameInput = document.getElementById('campaignName');
+          if (campaignNameInput) {
+            campaignNameInput.focus();
+          }
+        }, 100);
+      };
+
+      const closeWizard = event => {
+        if (event) event.preventDefault();
+        wizard.classList.add('hidden');
+        body.classList.remove('overflow-hidden');
+
+        // Reset campaign name
+        const campaignNameInput = document.getElementById('campaignName');
+        if (campaignNameInput) {
+          campaignNameInput.value = '';
+          campaignNameInput.classList.remove('ring-2', 'ring-red-500');
+          campaignNameInput.placeholder = 'Campaign Name *';
+        }
+
+        // Reset to step 1
+        currentStep = 1;
+        updateStepUI();
+      };
+
+      document.addEventListener('click', event => {
+        const openTrigger = event.target.closest('[data-open-campaign-wizard]');
+        if (openTrigger) {
+          console.debug('Opening campaign wizard via', openTrigger);
+          openWizard(event);
+          return;
+        }
+
+        const closeTrigger = event.target.closest('[data-close-campaign-wizard]');
+        if (closeTrigger) {
+          console.debug('Closing campaign wizard via', closeTrigger);
+          closeWizard(event);
+          return;
+        }
+      });
+
+      wizard.addEventListener('click', event => {
+        if (event.target === wizard) {
+          closeWizard(event);
+        }
+      });
+
+      window.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !wizard.classList.contains('hidden')) {
+          closeWizard(event);
+        }
+      });
+
+      // Wizard Step Management
+      let currentStep = 1;
+      const totalSteps = 3;
+
+      const updateConfirmationPage = () => {
+        // Mock data - in real app this would come from uploaded CSV
+        const mockCsvEntries = 1250;
+        const mockScenesCount = document.querySelectorAll('.website-target-row').length || 1;
+        const currentCredits = 10000; // Mock current balance
+
+        // Update CSV info
+        document.getElementById('confirmCsvFileName').textContent = 'prospects_list_q3.csv';
+        document.getElementById('confirmCsvEntries').textContent = `${mockCsvEntries.toLocaleString()} entries`;
+
+        // Calculate campaign metrics
+        const totalVideos = mockCsvEntries * mockScenesCount;
+        const creditsUsed = totalVideos; // 1 credit per video
+        const creditsRemaining = currentCredits - creditsUsed;
+
+        // Update campaign summary
+        document.getElementById('confirmTotalVideos').textContent = totalVideos.toLocaleString();
+        document.getElementById('confirmCreditsUsed').textContent = creditsUsed.toLocaleString();
+        document.getElementById('confirmCreditsRemaining').textContent = creditsRemaining.toLocaleString();
+
+        // Update color based on remaining credits
+        const remainingEl = document.getElementById('confirmCreditsRemaining');
+        if (creditsRemaining < 0) {
+          remainingEl.classList.remove('text-primary');
+          remainingEl.classList.add('text-red-600', 'dark:text-red-400');
+        } else {
+          remainingEl.classList.add('text-primary');
+          remainingEl.classList.remove('text-red-600', 'dark:text-red-400');
+        }
+      };
+
+      const updateStepUI = () => {
+        // Hide all steps
+        document.querySelectorAll('.wizard-step').forEach(step => step.classList.add('hidden'));
+
+        // Show current step
+        const currentStepEl = document.getElementById(`step${currentStep}`);
+        if (currentStepEl) currentStepEl.classList.remove('hidden');
+
+        // Update confirmation page if going to step 3
+        if (currentStep === 3) {
+          updateConfirmationPage();
+        }
+
+        // Update sidebar indicators
+        for (let i = 1; i <= totalSteps; i++) {
+          const stepIndicators = wizard.querySelectorAll('.step-indicator');
+          if (stepIndicators[i - 1]) {
+            const circle = stepIndicators[i - 1].querySelector('.flex-shrink-0');
+            const title = stepIndicators[i - 1].querySelector('h3');
+            const desc = stepIndicators[i - 1].querySelector('p');
+
+            if (i === currentStep) {
+              // Active step
+              circle.className = 'flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white font-bold text-base shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-2 ring-offset-background-light dark:ring-offset-foreground-dark';
+              title.className = 'text-base font-bold text-primary leading-tight';
+              desc.className = 'text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug';
+            } else if (i < currentStep) {
+              // Completed step
+              circle.className = 'flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-green-500 dark:bg-green-600 text-white font-bold text-base shadow-md';
+              title.className = 'text-base font-semibold text-green-600 dark:text-green-400 leading-tight';
+              desc.className = 'text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug opacity-75';
+            } else {
+              // Future step
+              circle.className = 'flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 font-bold text-base bg-background-light dark:bg-foreground-dark';
+              title.className = 'text-base font-semibold text-subtext-light dark:text-subtext-dark leading-tight';
+              desc.className = 'text-sm text-subtext-light dark:text-subtext-dark mt-1.5 leading-snug opacity-75';
+            }
+          }
+        }
+
+        // Update navigation buttons
+        const prevBtn = document.getElementById('prevStepBtn');
+        const nextBtn = document.getElementById('nextStepBtn');
+        const launchBtn = document.getElementById('launchCampaignBtn');
+
+        if (currentStep === 1) {
+          prevBtn.classList.add('hidden');
+        } else {
+          prevBtn.classList.remove('hidden');
+        }
+
+        if (currentStep === totalSteps) {
+          nextBtn.classList.add('hidden');
+          launchBtn.classList.remove('hidden');
+        } else {
+          nextBtn.classList.remove('hidden');
+          launchBtn.classList.add('hidden');
+        }
+      };
+
+      // Step navigation
+      const nextBtn = document.getElementById('nextStepBtn');
+      const prevBtn = document.getElementById('prevStepBtn');
+      const launchBtn = document.getElementById('launchCampaignBtn');
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          // Validate campaign name on step 1
+          if (currentStep === 1) {
+            const campaignName = document.getElementById('campaignName').value.trim();
+            if (!campaignName) {
+              // Highlight the input with error
+              const campaignInput = document.getElementById('campaignName');
+              campaignInput.classList.add('ring-2', 'ring-red-500');
+              campaignInput.placeholder = 'Campaign Name is required *';
+
+              // Remove error styling after user starts typing
+              campaignInput.addEventListener('input', function() {
+                this.classList.remove('ring-2', 'ring-red-500');
+                this.placeholder = 'Campaign Name *';
+              }, { once: true });
+
+              return; // Don't proceed to next step
+            }
+          }
+
+          if (currentStep < totalSteps) {
+            currentStep++;
+            updateStepUI();
+          }
+        });
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          if (currentStep > 1) {
+            currentStep--;
+            updateStepUI();
+          }
+        });
+      }
+
+      const handleLaunch = () => {
+        console.log('Launch campaign clicked');
+        // TODO: Add campaign launch logic
+        closeWizard();
+      };
+
+      if (launchBtn) {
+        launchBtn.addEventListener('click', handleLaunch);
+      }
+
+      // Also wire up the new launch button on confirm page
+      const launchBtn2 = document.getElementById('launchCampaignBtn2');
+      if (launchBtn2) {
+        launchBtn2.addEventListener('click', handleLaunch);
+      }
+
+      // Website Targets Management
+      const websiteTargetsContainer = document.getElementById('websiteTargetsContainer');
+      const addWebsiteBtn = document.getElementById('addWebsiteBtn');
+
+      const calculateTotalDuration = () => {
+        const durationInputs = document.querySelectorAll('.duration-input');
+        let total = 0;
+        durationInputs.forEach(input => {
+          total += parseInt(input.value) || 0;
+        });
+
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const seconds = total % 60;
+
+        let display = '';
+        if (hours > 0) {
+          display += `${hours}h `;
+          if (minutes > 0) display += `${minutes}m `;
+          if (seconds > 0) display += `${seconds}s`;
+        } else if (minutes > 0) {
+          display += `${minutes}m `;
+          if (seconds > 0) display += `${seconds}s`;
+        } else {
+          display = `${seconds}s`;
+        }
+
+        document.getElementById('totalDuration').textContent = display.trim() || '0s';
+      };
+
+      const createTargetRow = () => {
+        const row = document.createElement('div');
+        row.className = 'website-target-row flex items-center gap-4 px-1';
+        row.innerHTML = `
+          <select class="entry-type-select flex-none w-48 px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
+            <option value="manual">Manual Entry</option>
+            <option value="csv">CSV Column</option>
+          </select>
+
+          <div class="url-input-container flex-1">
+            <input type="text" placeholder="https://www.example.com" class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark placeholder-subtext-light dark:placeholder-subtext-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input type="number" value="30" min="1" max="300" class="duration-input w-20 px-3 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark text-center focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+            <span class="text-sm text-subtext-light dark:text-subtext-dark font-medium">sec</span>
+          </div>
+
+          <button class="remove-target-btn flex-none p-2 text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 hover:scale-110">
+            <span class="material-icons text-lg">close</span>
+          </button>
+        `;
+
+        // Add event listeners
+        const removeBtn = row.querySelector('.remove-target-btn');
+        removeBtn.addEventListener('click', () => {
+          row.remove();
+          calculateTotalDuration();
+          updateAddButtonState();
+        });
+
+        const durationInput = row.querySelector('.duration-input');
+        durationInput.addEventListener('input', calculateTotalDuration);
+
+        const typeSelect = row.querySelector('.entry-type-select');
+        const urlInputContainer = row.querySelector('.url-input-container');
+
+        typeSelect.addEventListener('change', () => {
+          if (typeSelect.value === 'csv') {
+            // Switch to dropdown for CSV columns
+            urlInputContainer.innerHTML = `
+              <select class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
+                <option value="">Select column...</option>
+                <option value="website_url">website_url</option>
+                <option value="company_website">company_website</option>
+                <option value="url">url</option>
+                <option value="website">website</option>
+              </select>
+            `;
+          } else {
+            // Switch to text input for manual entry
+            urlInputContainer.innerHTML = `
+              <input type="text" placeholder="https://www.example.com" class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark placeholder-subtext-light dark:placeholder-subtext-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+            `;
+          }
+        });
+
+        return row;
+      };
+
+      const updateAddButtonState = () => {
+        const rowCount = document.querySelectorAll('.website-target-row').length;
+        if (rowCount >= 5) {
+          addWebsiteBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        } else {
+          addWebsiteBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        }
+      };
+
+      if (addWebsiteBtn) {
+        addWebsiteBtn.addEventListener('click', () => {
+          const rowCount = document.querySelectorAll('.website-target-row').length;
+          if (rowCount < 5) {
+            const newRow = createTargetRow();
+            websiteTargetsContainer.appendChild(newRow);
+            calculateTotalDuration();
+            updateAddButtonState();
+          }
+        });
+      }
+
+      // Add event listeners to existing rows
+      document.querySelectorAll('.remove-target-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const row = e.target.closest('.website-target-row');
+          if (document.querySelectorAll('.website-target-row').length > 1) {
+            row.remove();
+            calculateTotalDuration();
+            updateAddButtonState();
+          }
+        });
+      });
+
+      document.querySelectorAll('.duration-input').forEach(input => {
+        input.addEventListener('input', calculateTotalDuration);
+      });
+
+      document.querySelectorAll('.entry-type-select').forEach(select => {
+        const row = select.closest('.website-target-row');
+        const urlInputContainer = row.querySelector('.url-input-container');
+        select.addEventListener('change', () => {
+          if (select.value === 'csv') {
+            // Switch to dropdown for CSV columns
+            urlInputContainer.innerHTML = `
+              <select class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
+                <option value="">Select column...</option>
+                <option value="website_url">website_url</option>
+                <option value="company_website">company_website</option>
+                <option value="url">url</option>
+                <option value="website">website</option>
+              </select>
+            `;
+          } else {
+            // Switch to text input for manual entry
+            urlInputContainer.innerHTML = `
+              <input type="text" placeholder="https://www.example.com" class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark placeholder-subtext-light dark:placeholder-subtext-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
+            `;
+          }
+        });
+      });
+
+      // Make sidebar steps clickable
+      document.querySelectorAll('.step-indicator').forEach(indicator => {
+        indicator.addEventListener('click', () => {
+          const stepNum = parseInt(indicator.getAttribute('data-step'));
+          if (stepNum && stepNum >= 1 && stepNum <= totalSteps) {
+            currentStep = stepNum;
+            updateStepUI();
+          }
+        });
+      });
+
+      // Make edit buttons work
+      document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-step-btn');
+        if (editBtn) {
+          const stepNum = parseInt(editBtn.getAttribute('data-edit-step'));
+          if (stepNum && stepNum >= 1 && stepNum <= totalSteps) {
+            currentStep = stepNum;
+            updateStepUI();
+          }
+        }
+      });
+
+      // Initialize
+      calculateTotalDuration();
+      updateStepUI();
+      updateAddButtonState();
+    });
+  </script>
+</body></html>

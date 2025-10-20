@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VidGen Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0066FF",
+            "background-light": "#F8FAFC",
+            "background-dark": "#1E293B",
+            "foreground-light": "#FFFFFF",
+            "foreground-dark": "#334155",
+            "text-light": "#334155",
+            "text-dark": "#CBD5E1",
+            "subtext-light": "#64748B",
+            "subtext-dark": "#94A3B8",
+            "border-light": "#E2E8F0",
+            "border-dark": "#334155"
+          },
+          fontFamily: {
+            display: ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+            lg: "12px"
+          },
+          boxShadow: {
+            sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+            input: "0 0 0 2px #BFDBFE"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .material-icons { font-size: 20px; }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+  <div class="flex h-screen">
+    <aside class="w-64 bg-foreground-light dark:bg-foreground-dark flex flex-col p-4 border-r border-border-light dark:border-border-dark">
+      <div class="flex items-center space-x-2 p-2 mb-8">
+        <svg class="h-8 w-8 text-primary" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.01 14.01L7.5 12.5l1.41-1.41 2.09 2.08 4.6-4.6L17.01 10l-6.02 6.01z" opacity="0.3"></path>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2.01-8.5l-2.09 2.09 1.41 1.41 2.09-2.09 4.6-4.6-1.41-1.41-4.6 4.6z"></path>
+        </svg>
+        <span class="text-2xl font-bold text-text-light dark:text-text-dark">VidGen</span>
+      </div>
+      <nav class="flex-1">
+        <ul>
+          <li class="mb-2">
+            <a class="flex items-center p-3 rounded-lg bg-primary/10 text-primary font-semibold" href="#">
+              <span class="material-icons mr-3">dashboard</span>
+              Dashboard
+            </a>
+          </li>
+          <li class="mb-2">
+            <a class="flex items-center p-3 rounded-lg text-subtext-light dark:text-subtext-dark hover:bg-gray-100 dark:hover:bg-gray-700" href="#">
+              <span class="material-icons mr-3">view_quilt</span>
+              Templates
+            </a>
+          </li>
+          <li class="mb-2">
+            <a class="flex items-center p-3 rounded-lg text-subtext-light dark:text-subtext-dark hover:bg-gray-100 dark:hover:bg-gray-700" href="#">
+              <span class="material-icons mr-3">campaign</span>
+              Campaigns
+            </a>
+          </li>
+          <li class="mb-2">
+            <a class="flex items-center p-3 rounded-lg text-subtext-light dark:text-subtext-dark hover:bg-gray-100 dark:hover:bg-gray-700" href="#">
+              <span class="material-icons mr-3">integration_instructions</span>
+              Integrations
+            </a>
+          </li>
+          <li class="mb-2">
+            <a class="flex items-center p-3 rounded-lg text-subtext-light dark:text-subtext-dark hover:bg-gray-100 dark:hover:bg-gray-700" href="#">
+              <span class="material-icons mr-3">settings</span>
+              Settings
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <div class="mt-auto">
+        <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+          <div class="flex items-center">
+            <img alt="Jane Doe avatar" class="w-10 h-10 rounded-full mr-3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgtFSAMjI1OMobS9YuS53VVD8IrSoBH5K8m4KI4BNplzapPFrpuyEgpIQ9iNcn1GVUiaiNG_aslTzQme-6ZxQEg-pXGMcY2RUAvUdlZPh-9bVnAZQrRzn8-G90i05VOKirR9y4SDk8HSssMnXA8J5rfG7mXi-HsPcqBQrTqzmhGNOmk2ER-WEZa62EY5re6lj9_2Y5X6h5vcKpDtJoVTlrxgIprUqzjkpMNbw2mNNMbbZky-r3DXYHQY6aVqtXjLCmtQsMTQm3Z58" />
+            <div>
+              <p class="font-semibold text-sm text-text-light dark:text-text-dark">Jane Doe</p>
+              <p class="text-xs text-subtext-light dark:text-subtext-dark">Acme Inc.</p>
+            </div>
+          </div>
+          <button class="text-subtext-light dark:text-subtext-dark">
+            <span class="material-icons">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+    <main class="flex-1 p-8 overflow-y-auto relative">
+      <header class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-text-light dark:text-text-dark">Dashboard</h1>
+          <p class="text-subtext-light dark:text-subtext-dark">Welcome back, Jane. Let's create some magic.</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a class="flex items-center text-subtext-light dark:text-subtext-dark font-medium" href="#">
+            <span class="material-icons mr-2">help_outline</span>
+            Help &amp; Support
+          </a>
+          <button data-open-campaign-wizard type="button" class="bg-primary text-white font-semibold py-2 px-4 rounded-lg flex items-center">
+            <span class="material-icons mr-2">add</span>
+            New Campaign
+          </button>
+        </div>
+      </header>
+      <div class="bg-foreground-light dark:bg-foreground-dark border border-dashed border-border-light dark:border-border-dark rounded-lg p-12 text-center mb-8">
+        <h2 class="text-2xl font-semibold mb-2 text-text-light dark:text-text-dark">Create Your First Campaign</h2>
+        <p class="text-subtext-light dark:text-subtext-dark mb-6">Ready to launch? Start by uploading a prospect list to <br /> generate your personalized videos.</p>
+        <button data-open-campaign-wizard type="button" class="bg-primary text-white font-semibold py-3 px-6 rounded-lg flex items-center mx-auto">
+          <span class="material-icons mr-2">add_circle_outline</span>
+          Start New Campaign
+        </button>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold mb-4 text-text-light dark:text-text-dark">Recent Activity</h2>
+        <div class="bg-foreground-light dark:bg-foreground-dark rounded-lg shadow-sm">
+          <table class="w-full text-left">
+            <thead class="border-b border-border-light dark:border-border-dark">
+              <tr>
+                <th class="p-4 text-xs font-semibold text-subtext-light dark:text-subtext-dark uppercase tracking-wider">Campaign</th>
+                <th class="p-4 text-xs font-semibold text-subtext-light dark:text-subtext-dark uppercase tracking-wider">Status</th>
+                <th class="p-4 text-xs font-semibold text-subtext-light dark:text-subtext-dark uppercase tracking-wider">Progress</th>
+                <th class="p-4 text-xs font-semibold text-subtext-light dark:text-subtext-dark uppercase tracking-wider">Date</th>
+                <th class="p-4"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-border-light dark:border-border-dark">
+                <td class="p-4 font-medium text-text-light dark:text-text-dark">Q4 Outreach - Tech Leads</td>
+                <td class="p-4">
+                  <span class="flex items-center text-sm text-green-600 dark:text-green-400">
+                    <span class="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
+                    Completed
+                  </span>
+                </td>
+                <td class="p-4">
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mr-2">
+                      <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <span class="text-sm text-subtext-light dark:text-subtext-dark">150/150</span>
+                  </div>
+                </td>
+                <td class="p-4 text-sm text-subtext-light dark:text-subtext-dark">2 days ago</td>
+                <td class="p-4 text-right">
+                  <button class="text-subtext-light dark:text-subtext-dark">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </td>
+              </tr>
+              <tr class="border-b border-border-light dark:border-border-dark">
+                <td class="p-4 font-medium text-text-light dark:text-text-dark">New LinkedIn Connections</td>
+                <td class="p-4">
+                  <span class="flex items-center text-sm text-yellow-600 dark:text-yellow-400">
+                    <span class="h-2 w-2 bg-yellow-500 rounded-full mr-2"></span>
+                    Processing
+                  </span>
+                </td>
+                <td class="p-4">
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mr-2">
+                      <div class="bg-yellow-500 h-1.5 rounded-full" style="width: 50%"></div>
+                    </div>
+                    <span class="text-sm text-subtext-light dark:text-subtext-dark">75/200</span>
+                  </div>
+                </td>
+                <td class="p-4 text-sm text-subtext-light dark:text-subtext-dark">1 hour ago</td>
+                <td class="p-4 text-right">
+                  <button class="text-subtext-light dark:text-subtext-dark">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td class="p-4 font-medium text-text-light dark:text-text-dark">Follow-up Sequence</td>
+                <td class="p-4">
+                  <span class="flex items-center text-sm text-red-600 dark:text-red-400">
+                    <span class="h-2 w-2 bg-red-500 rounded-full mr-2"></span>
+                    Failed
+                  </span>
+                </td>
+                <td class="p-4">
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mr-2">
+                      <div class="bg-red-500 h-1.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-sm text-subtext-light dark:text-subtext-dark">0/50</span>
+                  </div>
+                </td>
+                <td class="p-4 text-sm text-subtext-light dark:text-subtext-dark">5 days ago</td>
+                <td class="p-4 text-right">
+                  <button class="text-subtext-light dark:text-subtext-dark">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <template id="campaignWizardTemplate">
+    <div id="campaignWizard" class="hidden fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-background-light dark:bg-foreground-dark rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
+          <h1 class="text-xl font-bold text-text-light dark:text-text-dark">New Campaign</h1>
+          <button data-close-campaign-wizard type="button" class="text-subtext-light dark:text-subtext-dark hover:text-text-light">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="px-8 pt-8 border-b border-border-light dark:border-border-dark">
+          <div class="flex items-center">
+            <div class="flex items-center text-primary relative">
+              <div class="rounded-full transition duration-500.ease-in-out h-8 w-8 flex items-center justify-center border-2 border-primary bg-background-light dark:bg-foreground-dark">
+                <div class="h-3 w-3 bg-primary rounded-full"></div>
+              </div>
+              <div class="absolute top-0 -ml-10 text-center mt-12 w-32 text-xs font-bold uppercase text-primary">Assets &amp; List</div>
+            </div>
+            <div class="flex-auto border-t-2 transition duration-500.ease-in-out border-gray-300"></div>
+            <div class="flex items-center text-gray-500 relative">
+              <div class="rounded-full transition duration-500.ease-in-out h-8 w-8 flex items-center justify-center border-2 border-gray-300"></div>
+              <div class="absolute top-0 -ml-10 text-center mt-12 w-32 text-xs font-medium uppercase text-subtext-light">Targets</div>
+            </div>
+            <div class="flex-auto border-t-2 transition duration-500.ease-in-out border-gray-300"></div>
+            <div class="flex items-center text-gray-500 relative">
+              <div class="rounded-full transition duration-500.ease-in-out h-8 w-8 flex items-center justify-center border-2 border-gray-300"></div>
+              <div class="absolute top-0 -ml-10 text-center mt-12 w-32 text-xs font-medium uppercase text-subtext-light">Confirm</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-8 flex-grow overflow-y-auto flex flex-col">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow mt-10">
+            <div class="bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-lg p-6 shadow-sm flex flex-col">
+              <h3 class="font-semibold text-lg text-text-light dark:text-text-dark">Webcam Video <span class="text-red-500">*</span></h3>
+              <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4">This video will be overlaid on the screen recording.</p>
+              <div class="flex-grow flex flex-col items-center justify-center border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-6 text-center bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                <span class="material-icons text-5xl text-gray-400 mb-2">cloud_upload</span>
+                <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary">Click to upload</span> or drag and drop</p>
+                <p class="text-xs text-subtext-light dark:text-subtext-dark mt-1">MP4, max 100MB</p>
+              </div>
+              <p class="text-xs text-red-500 mt-2">* Required</p>
+            </div>
+            <div class="bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-lg p-6 shadow-sm flex flex-col">
+              <h3 class="font-semibold text-lg text-text-light dark:text-text-dark">Website URLs (CSV)</h3>
+              <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4">Upload a CSV with one column of website URLs.</p>
+              <div class="flex-grow flex flex-col items-center justify-center border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-6 text-center bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover-bg-gray-800 transition-colors cursor-pointer">
+                <span class="material-icons text-5xl text-gray-400 помочь_RUNTIME ERROR: output truncated**
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const template = document.getElementById('campaignWizardTemplate');
+      let wizard = document.getElementById('campaignWizard');
+      const body = document.body;
+
+      if (!wizard && template) {
+        document.body.insertAdjacentHTML('beforeend', template.innerHTML.trim());
+        wizard = document.getElementById('campaignWizard');
+        console.debug('Campaign wizard injected from template');
+      }
+
+      if (!wizard) {
+        console.warn('Campaign wizard element not found; skipping modal wiring.');
+        return;
+      }
+
+      const openWizard = event => {
+        if (event) event.preventDefault();
+        wizard.classList.remove('hidden');
+        body.classList.add('overflow-hidden');
+      };
+
+      const closeWizard = event => {
+        if (event) event.preventDefault();
+        wizard.classList.add('hidden');
+        body.classList.remove('overflow-hidden');
+      };
+
+      document.addEventListener('click', event => {
+        const openTrigger = event.target.closest('[data-open-campaign-wizard]');
+        if (openTrigger) {
+          console.debug('Opening campaign wizard via', openTrigger);
+          openWizard(event);
+          return;
+        }
+
+        const closeTrigger = event.target.closest('[data-close-campaign-wizard]');
+        if (closeTrigger) {
+          console.debug('Closing campaign wizard via', closeTrigger);
+          closeWizard(event);
+          return;
+        }
+      });
+
+      wizard.addEventListener('click', event => {
+        if (event.target === wizard) {
+          closeWizard(event);
+        }
+      });
+
+      window.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !wizard.classList.contains('hidden')) {
+          closeWizard(event);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
