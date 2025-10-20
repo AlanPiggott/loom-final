@@ -1,11 +1,30 @@
 // Tiny action DSL implementations
 const { normalizeUrl } = require('../utils/urlNormalizer');
+const { retryWithBackoff } = require('../utils/retryWithBackoff');
 
 async function doGoto(page, url) {
   // Normalize URL to ensure it has a protocol (https:// or http://)
   const normalizedUrl = normalizeUrl(url);
   console.log(`[doGoto] Navigating to: ${normalizedUrl}${url !== normalizedUrl ? ` (normalized from: ${url})` : ''}`);
-  await page.goto(normalizedUrl, { waitUntil: 'domcontentloaded' });
+
+  // Wrap navigation in retry logic to handle timeouts and transient failures
+  await retryWithBackoff(async () => {
+    await page.goto(normalizedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  }, {
+    maxRetries: 3,
+    initialDelayMs: 2000,
+    shouldRetry: (error) => {
+      // Retry on timeout errors or navigation failures
+      const isTimeout = error.message?.includes('Timeout') || error.message?.includes('timeout');
+      const isNavigationError = error.message?.includes('Navigation') || error.message?.includes('navigate');
+
+      if (isTimeout || isNavigationError) {
+        console.log(`[doGoto] Navigation failed (${error.message.split('\n')[0]}), will retry...`);
+        return true;
+      }
+      return false;
+    }
+  });
 }
 
 async function doWait(page, ms) {

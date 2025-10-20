@@ -731,6 +731,9 @@ Paused
         }
       });
 
+      // PiP Size - Fixed at 230px
+      const pipSize = 230;
+
       // Wizard Step Management
       let currentStep = 1;
       const totalSteps = 3;
@@ -955,7 +958,7 @@ Paused
                   facecam: {
                     path: './facecam.mp4',
                     pip: {
-                      width: 320,
+                      width: pipSize,
                       margin: 24,
                       corner: 'bottom-right'
                     },
