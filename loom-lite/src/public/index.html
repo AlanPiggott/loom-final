@@ -405,12 +405,23 @@ Paused
                   <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4 leading-relaxed">This video will be overlaid on the screen recording.</p>
 
                   <!-- Upload area with enhanced interactions -->
-                  <div class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
-                    <!-- Icon with rotation animation -->
-                    <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+                  <div id="videoUploadArea" class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
+                    <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime" class="hidden">
 
-                    <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
-                    <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">MP4, max 100MB</p>
+                    <!-- Upload prompt -->
+                    <div id="videoUploadPrompt">
+                      <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+                      <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
+                      <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">MP4, max 100MB</p>
+                    </div>
+
+                    <!-- Upload success indicator (hidden by default) -->
+                    <div id="videoUploadSuccess" class="hidden">
+                      <span class="material-icons text-5xl text-green-500 mb-3">check_circle</span>
+                      <p id="videoFileName" class="text-sm font-semibold text-text-light dark:text-text-dark"></p>
+                      <p id="videoFileSize" class="text-xs text-subtext-light dark:text-subtext-dark mt-1"></p>
+                      <button type="button" class="mt-3 text-xs text-primary hover:text-blue-600 font-semibold">Change video</button>
+                    </div>
 
                     <!-- Subtle hover gradient overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
@@ -425,12 +436,23 @@ Paused
                   <p class="text-sm text-subtext-light dark:text-subtext-dark mb-4 leading-relaxed">Upload a CSV with one column of website URLs.</p>
 
                   <!-- Upload area with enhanced interactions -->
-                  <div class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
-                    <!-- Icon with rotation animation -->
-                    <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+                  <div id="csvUploadArea" class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl py-12 px-8 text-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 hover:from-blue-50 hover:to-indigo-50/50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-300 cursor-pointer group min-h-[240px] overflow-hidden">
+                    <input type="file" id="csvFileInput" accept=".csv,text/csv" class="hidden">
 
-                    <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
-                    <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">CSV, max 5MB</p>
+                    <!-- Upload prompt -->
+                    <div id="csvUploadPrompt">
+                      <span class="material-icons text-6xl text-gray-400 group-hover:text-primary mb-3 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">cloud_upload</span>
+                      <p class="font-semibold text-text-light dark:text-text-dark text-base"><span class="text-primary font-bold">Click to upload</span> <span class="text-subtext-light dark:text-subtext-dark">or drag and drop</span></p>
+                      <p class="text-xs text-subtext-light dark:text-subtext-dark mt-2 font-medium opacity-75">CSV, max 5MB</p>
+                    </div>
+
+                    <!-- Upload success indicator (hidden by default) -->
+                    <div id="csvUploadSuccess" class="hidden">
+                      <span class="material-icons text-5xl text-green-500 mb-3">check_circle</span>
+                      <p id="csvFileName" class="text-sm font-semibold text-text-light dark:text-text-dark"></p>
+                      <p id="csvFileInfo" class="text-xs text-subtext-light dark:text-subtext-dark mt-1"></p>
+                      <button type="button" class="mt-3 text-xs text-primary hover:text-blue-600 font-semibold">Change CSV</button>
+                    </div>
 
                     <!-- Subtle hover gradient overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
@@ -888,6 +910,36 @@ Paused
         document.getElementById('totalDuration').textContent = display.trim() || '0s';
       };
 
+      // File Upload State
+      let uploadedVideo = null;
+      let uploadedVideoURL = null;
+      let uploadedCSV = null;
+      let csvData = {
+        filename: '',
+        rows: 0,
+        columns: [],
+        data: []
+      };
+
+      // Helper function to generate CSV column options
+      const getCSVColumnOptions = () => {
+        let options = '<option value="">Select column...</option>';
+        if (csvData.columns && csvData.columns.length > 0) {
+          csvData.columns.forEach(col => {
+            options += `<option value="${col}">${col}</option>`;
+          });
+        } else {
+          // Fallback options if no CSV uploaded yet
+          options += `
+            <option value="website_url">website_url</option>
+            <option value="company_website">company_website</option>
+            <option value="url">url</option>
+            <option value="website">website</option>
+          `;
+        }
+        return options;
+      };
+
       const createTargetRow = () => {
         const row = document.createElement('div');
         row.className = 'website-target-row flex items-center gap-4 px-1';
@@ -930,11 +982,7 @@ Paused
             // Switch to dropdown for CSV columns
             urlInputContainer.innerHTML = `
               <select class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
-                <option value="">Select column...</option>
-                <option value="website_url">website_url</option>
-                <option value="company_website">company_website</option>
-                <option value="url">url</option>
-                <option value="website">website</option>
+                ${getCSVColumnOptions()}
               </select>
             `;
           } else {
@@ -993,11 +1041,7 @@ Paused
             // Switch to dropdown for CSV columns
             urlInputContainer.innerHTML = `
               <select class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
-                <option value="">Select column...</option>
-                <option value="website_url">website_url</option>
-                <option value="company_website">company_website</option>
-                <option value="url">url</option>
-                <option value="website">website</option>
+                ${getCSVColumnOptions()}
               </select>
             `;
           } else {
@@ -1031,6 +1075,185 @@ Paused
           }
         }
       });
+
+      // Video Upload Handling
+      const videoUploadArea = document.getElementById('videoUploadArea');
+      const videoFileInput = document.getElementById('videoFileInput');
+      const videoUploadPrompt = document.getElementById('videoUploadPrompt');
+      const videoUploadSuccess = document.getElementById('videoUploadSuccess');
+
+      videoUploadArea.addEventListener('click', () => {
+        videoFileInput.click();
+      });
+
+      videoFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          // Validate file type
+          if (!file.type.startsWith('video/')) {
+            alert('Please upload a valid video file (MP4)');
+            return;
+          }
+
+          // Validate file size (100MB max)
+          const maxSize = 100 * 1024 * 1024;
+          if (file.size > maxSize) {
+            alert('Video file must be less than 100MB');
+            return;
+          }
+
+          // Store video and create object URL
+          uploadedVideo = file;
+          if (uploadedVideoURL) {
+            URL.revokeObjectURL(uploadedVideoURL);
+          }
+          uploadedVideoURL = URL.createObjectURL(file);
+
+          // Update UI
+          document.getElementById('videoFileName').textContent = file.name;
+          document.getElementById('videoFileSize').textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+          videoUploadPrompt.classList.add('hidden');
+          videoUploadSuccess.classList.remove('hidden');
+
+          // Update video preview on step 3
+          const videoPreview = document.getElementById('videoPreview');
+          const videoPlaceholder = document.getElementById('videoPlaceholder');
+          if (videoPreview && videoPlaceholder) {
+            videoPreview.src = uploadedVideoURL;
+            videoPlaceholder.classList.add('hidden');
+          }
+
+          console.log('Video uploaded:', file.name);
+        }
+      });
+
+      // CSV Upload Handling
+      const csvUploadArea = document.getElementById('csvUploadArea');
+      const csvFileInput = document.getElementById('csvFileInput');
+      const csvUploadPrompt = document.getElementById('csvUploadPrompt');
+      const csvUploadSuccess = document.getElementById('csvUploadSuccess');
+
+      csvUploadArea.addEventListener('click', () => {
+        csvFileInput.click();
+      });
+
+      csvFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          // Validate file type
+          if (!file.name.endsWith('.csv')) {
+            alert('Please upload a valid CSV file');
+            return;
+          }
+
+          // Validate file size (5MB max)
+          const maxSize = 5 * 1024 * 1024;
+          if (file.size > maxSize) {
+            alert('CSV file must be less than 5MB');
+            return;
+          }
+
+          // Parse CSV
+          const text = await file.text();
+          const lines = text.split('\n').filter(line => line.trim());
+
+          if (lines.length < 2) {
+            alert('CSV must have at least a header row and one data row');
+            return;
+          }
+
+          // Parse header
+          const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+          // Parse data rows
+          const dataRows = [];
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+            if (values.length > 0 && values[0]) {
+              dataRows.push(values);
+            }
+          }
+
+          // Store CSV data
+          uploadedCSV = file;
+          csvData = {
+            filename: file.name,
+            rows: dataRows.length,
+            columns: headers,
+            data: dataRows
+          };
+
+          // Update UI
+          document.getElementById('csvFileName').textContent = file.name;
+          document.getElementById('csvFileInfo').textContent = `${csvData.rows.toLocaleString()} rows • ${headers.length} columns`;
+          csvUploadPrompt.classList.add('hidden');
+          csvUploadSuccess.classList.remove('hidden');
+
+          // Update CSV column dropdowns in all target rows
+          updateCSVColumnDropdowns();
+
+          console.log('CSV uploaded:', file.name, '- Rows:', csvData.rows, '- Columns:', csvData.columns);
+        }
+      });
+
+      // Update CSV column dropdowns
+      const updateCSVColumnDropdowns = () => {
+        const rows = document.querySelectorAll('.website-target-row');
+        rows.forEach(row => {
+          const typeSelect = row.querySelector('.entry-type-select');
+          if (typeSelect && typeSelect.value === 'csv') {
+            const urlInputContainer = row.querySelector('.url-input-container');
+            const currentValue = urlInputContainer.querySelector('.url-input')?.value || '';
+
+            let optionsHTML = '<option value="">Select column...</option>';
+            csvData.columns.forEach(col => {
+              const selected = col === currentValue ? 'selected' : '';
+              optionsHTML += `<option value="${col}" ${selected}>${col}</option>`;
+            });
+
+            urlInputContainer.innerHTML = `
+              <select class="url-input w-full px-4 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10">
+                ${optionsHTML}
+              </select>
+            `;
+          }
+        });
+      };
+
+      // Update confirmation page to use real CSV data
+      const originalUpdateConfirmationPage = updateConfirmationPage;
+      updateConfirmationPage = () => {
+        const mockScenesCount = document.querySelectorAll('.website-target-row').length || 1;
+        const currentCredits = 10000; // Mock current balance
+
+        // Use real CSV data if available, otherwise use mock data
+        const csvEntries = csvData.rows || 1250;
+        const csvFilename = csvData.filename || 'prospects_list_q3.csv';
+
+        // Update CSV info
+        document.getElementById('confirmCsvFileName').textContent = csvFilename;
+        document.getElementById('confirmCsvEntries').textContent = `${csvEntries.toLocaleString()} entries`;
+
+        // Calculate campaign metrics
+        const totalVideos = csvEntries * mockScenesCount;
+        const creditsUsed = totalVideos; // 1 credit per video
+        const creditsRemaining = currentCredits - creditsUsed;
+
+        // Update campaign summary
+        document.getElementById('confirmTotalVideos').textContent = totalVideos.toLocaleString();
+        document.getElementById('confirmCreditsUsed').textContent = creditsUsed.toLocaleString();
+        document.getElementById('confirmCreditsRemaining').textContent = creditsRemaining.toLocaleString();
+
+        // Update color based on remaining credits
+        const remainingEl = document.getElementById('confirmCreditsRemaining');
+        if (creditsRemaining < 0) {
+          remainingEl.classList.remove('text-primary');
+          remainingEl.classList.add('text-red-600', 'dark:text-red-400');
+        } else {
+          remainingEl.classList.add('text-primary');
+          remainingEl.classList.remove('text-red-600', 'dark:text-red-400');
+        }
+      };
 
       // Initialize
       calculateTotalDuration();
