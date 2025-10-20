@@ -550,6 +550,10 @@ Paused
                           <span class="text-sm text-subtext-light dark:text-subtext-dark">Videos to be generated</span>
                           <span id="confirmTotalVideos" class="text-lg font-bold text-text-light dark:text-text-dark">1,250</span>
                         </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-border-light/50 dark:border-border-dark/50">
+                          <span class="text-sm text-subtext-light dark:text-subtext-dark">Current credits</span>
+                          <span id="confirmCurrentCredits" class="text-lg font-bold text-text-light dark:text-text-dark">1,000</span>
+                        </div>
                         <div class="flex items-center justify-between">
                           <span class="text-sm text-subtext-light dark:text-subtext-dark">Credits this campaign will use</span>
                           <span id="confirmCreditsUsed" class="text-lg font-bold text-text-light dark:text-text-dark">1,250</span>
@@ -730,37 +734,6 @@ Paused
       // Wizard Step Management
       let currentStep = 1;
       const totalSteps = 3;
-
-      const updateConfirmationPage = () => {
-        // Mock data - in real app this would come from uploaded CSV
-        const mockCsvEntries = 1250;
-        const mockScenesCount = document.querySelectorAll('.website-target-row').length || 1;
-        const currentCredits = 10000; // Mock current balance
-
-        // Update CSV info
-        document.getElementById('confirmCsvFileName').textContent = 'prospects_list_q3.csv';
-        document.getElementById('confirmCsvEntries').textContent = `${mockCsvEntries.toLocaleString()} entries`;
-
-        // Calculate campaign metrics
-        const totalVideos = mockCsvEntries * mockScenesCount;
-        const creditsUsed = totalVideos; // 1 credit per video
-        const creditsRemaining = currentCredits - creditsUsed;
-
-        // Update campaign summary
-        document.getElementById('confirmTotalVideos').textContent = totalVideos.toLocaleString();
-        document.getElementById('confirmCreditsUsed').textContent = creditsUsed.toLocaleString();
-        document.getElementById('confirmCreditsRemaining').textContent = creditsRemaining.toLocaleString();
-
-        // Update color based on remaining credits
-        const remainingEl = document.getElementById('confirmCreditsRemaining');
-        if (creditsRemaining < 0) {
-          remainingEl.classList.remove('text-primary');
-          remainingEl.classList.add('text-red-600', 'dark:text-red-400');
-        } else {
-          remainingEl.classList.add('text-primary');
-          remainingEl.classList.remove('text-red-600', 'dark:text-red-400');
-        }
-      };
 
       const updateStepUI = () => {
         // Hide all steps
@@ -1192,6 +1165,9 @@ Paused
           // Update CSV column dropdowns in all target rows
           updateCSVColumnDropdowns();
 
+          // Update confirmation page with new CSV data
+          updateConfirmationPage();
+
           console.log('CSV uploaded:', file.name, '- Rows:', csvData.rows, '- Columns:', csvData.columns);
         }
       });
@@ -1221,7 +1197,7 @@ Paused
       };
 
       // Update confirmation page to use real CSV data
-      updateConfirmationPage = () => {
+      const updateConfirmationPage = () => {
         const mockScenesCount = document.querySelectorAll('.website-target-row').length || 1;
         const currentCredits = 1000; // Current credit balance
 
@@ -1235,11 +1211,26 @@ Paused
 
         // Calculate campaign metrics
         const totalVideos = csvEntries * mockScenesCount;
-        const creditsUsed = totalVideos; // 1 credit per video
+
+        // Calculate total duration across all scenes
+        const scenes = document.querySelectorAll('.website-target-row');
+        let totalDurationSeconds = 0;
+        scenes.forEach(scene => {
+          const durationInput = scene.querySelector('.duration-input');
+          const duration = parseInt(durationInput.value) || 30;
+          totalDurationSeconds += duration;
+        });
+
+        // Calculate total time for all videos (CSV entries × total duration per video)
+        const totalSeconds = csvEntries * totalDurationSeconds;
+
+        // Convert to minutes and round DOWN (1 credit = 1 minute)
+        const creditsUsed = Math.floor(totalSeconds / 60);
         const creditsRemaining = currentCredits - creditsUsed;
 
         // Update campaign summary
         document.getElementById('confirmTotalVideos').textContent = totalVideos.toLocaleString();
+        document.getElementById('confirmCurrentCredits').textContent = currentCredits.toLocaleString();
         document.getElementById('confirmCreditsUsed').textContent = creditsUsed.toLocaleString();
         document.getElementById('confirmCreditsRemaining').textContent = creditsRemaining.toLocaleString();
 
