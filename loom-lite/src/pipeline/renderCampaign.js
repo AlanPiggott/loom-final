@@ -1,11 +1,46 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { ensureFfmpeg, ffprobeJson } = require('../utils/ffmpeg');
 const { recordScene } = require('../recording/recordScene');
 const { normalizeScene } = require('../compose/normalizeScene');
 const { concatScenes } = require('../compose/concatScenes');
 const { overlayFacecam } = require('../compose/overlayFacecam');
 const { makeThumbnail } = require('../compose/thumbnail');
+
+/**
+ * Generate cache key from scene URL
+ */
+function getCacheKey(url) {
+  return crypto.createHash('md5').update(url).digest('hex');
+}
+
+/**
+ * Retry scene recording with exponential backoff
+ */
+async function retrySceneRecording(scene, ctx, maxAttempts = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[renderCampaign] Recording ${scene.url} (attempt ${attempt}/${maxAttempts})...`);
+      const result = await recordScene(scene, ctx);
+      console.log(`[renderCampaign] Successfully recorded ${scene.url}`);
+      return result;
+    } catch (error) {
+      lastError = error;
+      console.error(`[renderCampaign] Attempt ${attempt}/${maxAttempts} failed for ${scene.url}:`, error.message);
+
+      if (attempt < maxAttempts) {
+        const delayMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+        console.log(`[renderCampaign] Retrying in ${delayMs / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  throw new Error(`Failed to record scene ${scene.id} (${scene.url}) after ${maxAttempts} attempts: ${lastError.message}`);
+}
 
 async function renderCampaign(configPathOrObj) {
   await ensureFfmpeg();
@@ -23,11 +58,17 @@ async function renderCampaign(configPathOrObj) {
   const workDir = path.join(baseDir, 'work');
   if (!fs.existsSync(workDir)) fs.mkdirSync(workDir, { recursive: true });
 
+  // Create cache directory for reusable scene recordings
+  const cacheDir = path.join(baseDir, 'cache');
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
   const ctx = {
     w: cfg.output.width || 1920,
     h: cfg.output.height || 1080,
     fps: cfg.output.fps || 30,
-    workDir
+    pageLoadWaitMs: cfg.output.pageLoadWaitMs !== undefined ? cfg.output.pageLoadWaitMs : 7000,
+    workDir,
+    cacheDir
   };
 
   // Sanity for facecam path
@@ -35,19 +76,50 @@ async function renderCampaign(configPathOrObj) {
     ? cfg.output.facecam.path
     : path.join(baseDir, cfg.output.facecam.path);
 
-  // 1) Record scenes
+  // 1) Record scenes (with caching)
+  // Fail entire render if ANY scene fails after retries
+  // Cache only raw webm; trim is always recomputed from video content
   const normalized = [];
-  for (const s of cfg.scenes) {
-    const webm = await recordScene(s, ctx);
-    const mp4 = await normalizeScene(webm, ctx, s.id);
-    normalized.push(mp4);
+  try {
+    for (const s of cfg.scenes) {
+      const cacheKey = getCacheKey(s.url);
+      const cachedWebm = path.join(cacheDir, `${cacheKey}.webm`);
+
+      let videoPath;
+
+      // Check if we have a cached recording for this URL
+      if (fs.existsSync(cachedWebm)) {
+        console.log(`[renderCampaign] Using cached recording for ${s.url}`);
+
+        // Copy cached webm to work directory for this scene
+        const workWebm = path.join(workDir, `${s.id}.webm`);
+        fs.copyFileSync(cachedWebm, workWebm);
+        videoPath = workWebm;
+        console.log(`[renderCampaign] Copied from cache (trim will be recomputed from video)`);
+      } else {
+        console.log(`[renderCampaign] Recording ${s.url} (will be cached for future use)`);
+        const result = await retrySceneRecording(s, ctx);
+        videoPath = result.videoPath;
+
+        // Save to cache for future renders (webm only, no metadata)
+        fs.copyFileSync(videoPath, cachedWebm);
+        console.log(`[renderCampaign] Saved to cache for future reuse`);
+      }
+
+      // normalizeScene will auto-detect trim from video content
+      const mp4 = await normalizeScene(videoPath, ctx, s);
+      normalized.push(mp4);
+    }
+  } catch (error) {
+    throw new Error(`Video render aborted - scene recording failed: ${error.message}`);
   }
 
   // 2) Concat bg
   const bg = await concatScenes(normalized, ctx);
 
   // 3) Overlay facecam with audio
-  const final = await overlayFacecam(bg, cfg.output.facecam, ctx);
+  // No trimming needed - scenes are already trimmed individually in normalizeScene
+  const final = await overlayFacecam(bg, cfg.output.facecam, ctx, 0);
 
   // 4) Poster
   const poster = await makeThumbnail(final, 3);

@@ -11,7 +11,7 @@ function overlayExpr(corner, margin) {
   }
 }
 
-async function overlayFacecam(bgPath, faceCfg, ctx) {
+async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   const out = path.join(path.dirname(bgPath), '..', 'final.mp4');
   const pipW = faceCfg.pip?.width || 230;
   const margin = faceCfg.pip?.margin || 40;
@@ -22,7 +22,8 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
   const maskPath = path.join(__dirname, '../assets/masks/rounded_square.png');
 
   const bgMeta = await ffprobeJson(bgPath);
-  const bgDur = parseFloat(bgMeta.format?.duration || '0');
+  const bgDurOriginal = parseFloat(bgMeta.format?.duration || '0');
+  const bgDur = Math.max(0, bgDurOriginal - trimStartSec);
 
   const faceMeta = await ffprobeJson(faceCfg.path);
   const faceDur = parseFloat(faceMeta.format?.duration || '0');
@@ -87,15 +88,16 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
 
       // Step 4: Create shadow with larger canvas to avoid clipping blur
       `[mask2]pad=${shadowSize}:${shadowSize}:(ow-iw)/2:(oh-ih)/2:color=black@0.0,boxblur=16[mask_blurred];`,
-      `color=c=black:s=${shadowSize}x${shadowSize}:d=${bgDur},format=rgba[black];`,
+      `color=c=black:s=${shadowSize}x${shadowSize}:d=${bgDur}:r=${ctx.fps},format=rgba[black];`,
       `[black][mask_blurred]alphamerge,colorchannelmixer=aa=0.5[shadow];`,
 
       // Step 5: Audio chain
       audioChain,
 
       // Step 6: Overlay shadow first (at calculated position), then facecam on top
-      `[0:v][shadow]overlay=${shadowX}:${shadowY}[bg_shadow];`,
-      `[bg_shadow][cam]overlay=${x}:${y}[vout]`
+      // Use shortest=1 to end overlay when background ends (not when facecam ends)
+      `[0:v][shadow]overlay=${shadowX}:${shadowY}:shortest=1[bg_shadow];`,
+      `[bg_shadow][cam]overlay=${x}:${y}:shortest=1[vout]`
     ].join('');
 
     mapArgs = ['-map', '[vout]', '-map', '[aud]'];
@@ -113,18 +115,20 @@ async function overlayFacecam(bgPath, faceCfg, ctx) {
 
       // Step 4: Create shadow with larger canvas to avoid clipping blur
       `[mask2]pad=${shadowSize}:${shadowSize}:(ow-iw)/2:(oh-ih)/2:color=black@0.0,boxblur=16[mask_blurred];`,
-      `color=c=black:s=${shadowSize}x${shadowSize}:d=${bgDur},format=rgba[black];`,
+      `color=c=black:s=${shadowSize}x${shadowSize}:d=${bgDur}:r=${ctx.fps},format=rgba[black];`,
       `[black][mask_blurred]alphamerge,colorchannelmixer=aa=0.5[shadow];`,
 
       // Step 5: Overlay shadow first (at calculated position), then facecam on top
-      `[0:v][shadow]overlay=${shadowX}:${shadowY}[bg_shadow];`,
-      `[bg_shadow][cam]overlay=${x}:${y}[vout]`
+      // Use shortest=1 to end overlay when background ends (not when facecam ends)
+      `[0:v][shadow]overlay=${shadowX}:${shadowY}:shortest=1[bg_shadow];`,
+      `[bg_shadow][cam]overlay=${x}:${y}:shortest=1[vout]`
     ].join('');
 
     mapArgs = ['-map', '[vout]', '-map', '0:a?']; // Use background audio if available
   }
 
   const ffmpegArgs = [
+    '-ss', String(trimStartSec), // Trim first N seconds of background video
     '-i', bgPath,
     '-i', faceCfg.path,
     '-i', maskPath, // Add mask as 3rd input
