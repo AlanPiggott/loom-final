@@ -76,6 +76,23 @@ async function renderCampaign(configPathOrObj) {
     ? cfg.output.facecam.path
     : path.join(baseDir, cfg.output.facecam.path);
 
+  // Validate duration matching: sum(scenes) must equal facecam duration
+  console.log('[renderCampaign] Validating duration matching...');
+  const facecamMeta = await ffprobeJson(cfg.output.facecam.path);
+  const facecamDur = Math.floor(parseFloat(facecamMeta.format?.duration || '0'));
+  const scenesTotalDur = cfg.scenes.reduce((sum, s) => sum + (s.durationSec || 0), 0);
+
+  console.log(`[renderCampaign] Facecam duration: ${facecamDur}s, Scenes total: ${scenesTotalDur}s`);
+
+  if (scenesTotalDur !== facecamDur) {
+    const errorMsg = `Duration mismatch: Scenes total ${scenesTotalDur}s must equal facecam ${facecamDur}s. ` +
+                     `Adjust durations or use Auto-fill.`;
+    console.error(`[renderCampaign] ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
+
+  console.log('[renderCampaign] ✓ Duration validation passed');
+
   // 1) Record scenes (with caching)
   // Fail entire render if ANY scene fails after retries
   // Cache only raw webm; trim is always recomputed from video content

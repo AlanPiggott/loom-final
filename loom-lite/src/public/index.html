@@ -465,7 +465,53 @@ Paused
             <div id="step2" class="wizard-step hidden">
               <div class="max-w-5xl">
                 <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-2 tracking-tight">Target Websites</h2>
-                <p class="text-subtext-light dark:text-subtext-dark mb-8">Configure the websites you want to record and set the duration for each.</p>
+                <p class="text-subtext-light dark:text-subtext-dark mb-4">Configure the websites you want to record and set the duration for each.</p>
+
+                <!-- Duration Overview Header -->
+                <div class="duration-overview bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-700/30 border border-border-light/60 dark:border-border-dark/60 rounded-xl p-5 mb-6 shadow-sm">
+
+                  <!-- Row 1: Duration Stats -->
+                  <div class="flex items-center gap-8 mb-4">
+                    <div class="flex items-center gap-2">
+                      <span class="material-icons text-primary text-xl">videocam</span>
+                      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Facecam:</span>
+                      <span id="facecamDuration" class="text-lg font-bold text-gray-900 dark:text-white">--s</span>
+                    </div>
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+                    <div class="flex items-center gap-2">
+                      <span class="material-icons text-gray-600 dark:text-gray-300 text-xl">schedule</span>
+                      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Remaining:</span>
+                      <span id="remainingDuration" class="remaining-pill text-base font-bold px-3 py-1.5 rounded-lg">--s</span>
+                      <div class="relative group">
+                        <span class="material-icons text-gray-400 dark:text-gray-500 text-sm cursor-help">info_outline</span>
+                        <div class="tooltip-text absolute left-0 top-6 w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
+                          Time left to allocate. Must be 0s to render.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 2: Auto-fill Button -->
+                  <div class="flex items-center gap-2 mb-4">
+                    <button id="autoFillAllBtn" type="button" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all duration-300 hover:scale-105 disabled:hover:scale-100 shadow-md disabled:shadow-none">
+                      <span class="material-icons text-base">auto_awesome</span>
+                      Auto-fill Last Scene
+                    </button>
+                    <div class="relative group">
+                      <span class="material-icons text-gray-400 dark:text-gray-500 text-sm cursor-help">help_outline</span>
+                      <div class="tooltip-text absolute left-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
+                        Automatically fills the last scene with all remaining seconds to match your facecam duration
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 3: Status Message Area (Fixed Height) -->
+                  <div id="statusMessageContainer" class="min-h-10 flex items-center px-3 py-2 rounded-lg transition-all duration-300">
+                    <span id="statusMessageIcon" class="material-icons text-lg mr-2"></span>
+                    <span id="statusMessageText" class="text-sm font-medium"></span>
+                  </div>
+
+                </div>
 
                 <!-- Website Targets Container -->
                 <div id="websiteTargetsContainer" class="space-y-4 mb-6">
@@ -483,6 +529,12 @@ Paused
                     <div class="flex items-center gap-2">
                       <input type="number" value="30" min="1" max="300" class="duration-input w-20 px-3 py-3 bg-foreground-light dark:bg-foreground-dark border border-border-light dark:border-border-dark rounded-xl text-sm text-text-light dark:text-text-dark text-center focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 shadow-sm"/>
                       <span class="text-sm text-subtext-light dark:text-subtext-dark font-medium">sec</span>
+                      <div class="relative group">
+                        <span class="material-icons text-gray-400 dark:text-gray-500 text-sm cursor-help">info_outline</span>
+                        <div class="tooltip-text absolute left-0 top-6 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
+                          Scene duration in seconds. Min 1s, max based on remaining time.
+                        </div>
+                      </div>
                     </div>
 
                     <button class="remove-target-btn flex-none p-2 text-subtext-light dark:text-subtext-dark hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 hover:scale-110">
@@ -643,6 +695,90 @@ Paused
       animation: slideInRight 0.4s ease-out 0.1s backwards;
     }
 
+    /* Duration Pill Colors */
+    .remaining-pill.green {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .remaining-pill.amber {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .remaining-pill.red {
+      background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .remaining-pill.neutral {
+      background: #9ca3af !important;
+      color: white !important;
+      font-weight: 600;
+    }
+
+    /* Status Message Styles */
+    .status-success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .dark .status-success {
+      background-color: #064e3b;
+      color: #6ee7b7;
+    }
+
+    .status-warning {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+    .dark .status-warning {
+      background-color: #78350f;
+      color: #fcd34d;
+    }
+
+    .status-error {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .dark .status-error {
+      background-color: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .status-info {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    .dark .status-info {
+      background-color: #1e3a8a;
+      color: #93c5fd;
+    }
+
+    .status-neutral {
+      background-color: transparent;
+      color: #6b7280;
+    }
+
+    /* Tooltip Styles */
+    .tooltip-text {
+      pointer-events: none;
+    }
+
+    .tooltip-text::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: 12px;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 4px solid #111827;
+    }
+
     /* Respect reduced motion preferences */
     @media (prefers-reduced-motion: reduce) {
       .animate-fadeIn,
@@ -796,6 +932,11 @@ Paused
           nextBtn.classList.remove('hidden');
           launchBtn.classList.add('hidden');
         }
+
+        // Update next button state for validation (if function is defined)
+        if (typeof updateNextButtonState === 'function') {
+          updateNextButtonState();
+        }
       };
 
       // Step navigation
@@ -804,7 +945,17 @@ Paused
       const launchBtn = document.getElementById('launchCampaignBtn');
 
       if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', (e) => {
+          console.log('[Next Button] Clicked, currentStep:', currentStep, 'disabled:', nextBtn.disabled);
+
+          // CRITICAL: Stop if button is disabled (bulletproof protection)
+          if (nextBtn.disabled) {
+            console.log('[Next Button] BLOCKED - button is disabled');
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+
           // Validate campaign name on step 1
           if (currentStep === 1) {
             const campaignName = document.getElementById('campaignName').value.trim();
@@ -824,6 +975,30 @@ Paused
             }
           }
 
+          // Validate duration matching on step 2 (bulletproof check)
+          if (currentStep === 2 && facecamDurationSec > 0) {
+            const remaining = calculateRemaining();
+            console.log('[Next Button] Step 2 validation - remaining:', remaining);
+            if (remaining !== 0) {
+              console.log('[Next Button] BLOCKED - duration mismatch');
+              // Show error notification
+              const warningEl = document.getElementById('durationWarning');
+              warningEl.classList.remove('hidden');
+              const message = remaining > 0
+                ? `Add ${remaining}s more to scenes (use Auto-fill or adjust durations)`
+                : `Remove ${Math.abs(remaining)}s from scenes to match facecam`;
+              warningEl.innerHTML = `<span class="material-icons text-sm">warning</span>${message}`;
+
+              // Scroll to duration header
+              document.querySelector('.duration-header-pills').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+              e.preventDefault();
+              e.stopPropagation();
+              return false; // Don't proceed to next step
+            }
+          }
+
+          console.log('[Next Button] Validation passed, proceeding to next step');
           if (currentStep < totalSteps) {
             currentStep++;
             updateStepUI();
@@ -1162,9 +1337,15 @@ Paused
       const calculateTotalDuration = () => {
         const durationInputs = document.querySelectorAll('.duration-input');
         let total = 0;
+        const values = [];
         durationInputs.forEach(input => {
-          total += parseInt(input.value) || 0;
+          const val = parseInt(input.value) || 0;
+          values.push(val);
+          total += val;
         });
+
+        // Debug logging
+        console.log(`[Duration Debug] Found ${durationInputs.length} inputs with values:`, values, `Total: ${total}s`);
 
         const hours = Math.floor(total / 3600);
         const minutes = Math.floor((total % 3600) / 60);
@@ -1185,9 +1366,154 @@ Paused
         document.getElementById('totalDuration').textContent = display.trim() || '0s';
       };
 
+      // Calculate remaining duration
+      const calculateRemaining = () => {
+        const durationInputs = document.querySelectorAll('.duration-input');
+        let scenesTotal = 0;
+        durationInputs.forEach(input => {
+          scenesTotal += parseInt(input.value) || 0;
+        });
+        const remaining = facecamDurationSec - scenesTotal;
+        console.log(`[Remaining Debug] Facecam: ${facecamDurationSec}s, Scenes: ${scenesTotal}s, Remaining: ${remaining}s`);
+        return remaining;
+      };
+
+      // Update status message (single source of truth for all feedback)
+      let statusMessageTimeout = null;
+      const updateStatusMessage = (type, message, icon = '', autoHide = false) => {
+        const container = document.getElementById('statusMessageContainer');
+        const iconEl = document.getElementById('statusMessageIcon');
+        const textEl = document.getElementById('statusMessageText');
+
+        if (!container || !iconEl || !textEl) return;
+
+        // Clear auto-hide timeout
+        if (statusMessageTimeout) {
+          clearTimeout(statusMessageTimeout);
+          statusMessageTimeout = null;
+        }
+
+        // Remove all status classes
+        container.classList.remove('status-success', 'status-warning', 'status-error', 'status-info', 'status-neutral');
+
+        if (!message) {
+          // Empty state
+          container.classList.add('status-neutral');
+          iconEl.textContent = '';
+          textEl.textContent = '';
+          return;
+        }
+
+        // Add appropriate class and icon
+        container.classList.add(`status-${type}`);
+        iconEl.textContent = icon;
+        textEl.textContent = message;
+
+        // Auto-hide for action feedback
+        if (autoHide) {
+          statusMessageTimeout = setTimeout(() => {
+            updateStatusMessage('', '', '', false);
+          }, 3000);
+        }
+      };
+
+      // Update duration header pills
+      const updateDurationHeader = () => {
+        const facecamEl = document.getElementById('facecamDuration');
+        const remainingEl = document.getElementById('remainingDuration');
+
+        if (facecamDurationSec > 0) {
+          facecamEl.textContent = `${facecamDurationSec}s`;
+          const remaining = calculateRemaining();
+          remainingEl.textContent = `${remaining}s`;
+
+          // Color coding
+          remainingEl.classList.remove('green', 'amber', 'red', 'neutral');
+
+          // Update status message based on remaining
+          if (remaining === 0) {
+            remainingEl.classList.add('green');
+            updateStatusMessage('success', 'Durations match perfectly! Ready to render.', 'check_circle');
+          } else if (remaining > 0) {
+            remainingEl.classList.add('amber');
+            updateStatusMessage('warning', `Add ${remaining}s more to scenes (click Auto-fill or adjust durations)`, 'warning');
+          } else {
+            remainingEl.classList.add('red');
+            updateStatusMessage('error', `Remove ${Math.abs(remaining)}s from scenes to match facecam`, 'error');
+          }
+        } else {
+          facecamEl.textContent = '--s';
+          remainingEl.textContent = '--s';
+          remainingEl.classList.remove('green', 'amber', 'red');
+          remainingEl.classList.add('neutral');
+          updateStatusMessage('info', 'Upload a facecam to see duration matching', 'info');
+        }
+
+        updateNextButtonState();
+        updateAutoFillButton();
+      };
+
+      // Update next button state based on validation
+      const updateNextButtonState = () => {
+        const remaining = calculateRemaining();
+        const nextBtn = document.getElementById('nextStepBtn');
+
+        if (currentStep === 2 && facecamDurationSec > 0 && remaining !== 0) {
+          nextBtn.disabled = true;
+          nextBtn.title = 'Use Auto-fill or adjust durations so Remaining is 0s';
+          nextBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        } else {
+          nextBtn.disabled = false;
+          nextBtn.title = '';
+          nextBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        }
+      };
+
+      // Update auto-fill button (always visible when facecam uploaded, disabled when N/A)
+      const updateAutoFillButton = () => {
+        const autoFillBtn = document.getElementById('autoFillAllBtn');
+        if (!autoFillBtn) return;
+
+        const remaining = calculateRemaining();
+        const rows = document.querySelectorAll('.website-target-row');
+
+        // Enable/disable based on conditions
+        if (facecamDurationSec > 0 && remaining > 0 && rows.length > 0) {
+          autoFillBtn.disabled = false;
+        } else {
+          autoFillBtn.disabled = true;
+        }
+
+        // Update button click handler (only once)
+        if (!autoFillBtn.dataset.initialized) {
+          autoFillBtn.dataset.initialized = 'true';
+          autoFillBtn.addEventListener('click', () => {
+            const currentRemaining = calculateRemaining();
+            const currentRows = document.querySelectorAll('.website-target-row');
+
+            if (currentRemaining <= 0 || currentRows.length === 0) return;
+
+            const lastRow = currentRows[currentRows.length - 1];
+            const input = lastRow.querySelector('.duration-input');
+            const currentVal = parseInt(input.value) || 0;
+            const newVal = Math.max(1, currentRemaining + currentVal);
+
+            input.value = newVal;
+            input.focus();
+
+            // Trigger input event to update calculations
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+
+            // Show success message
+            updateStatusMessage('info', `Last scene filled with ${currentRemaining}s`, 'check_circle', true);
+          });
+        }
+      };
+
       // File Upload State
       let uploadedVideo = null;
       let uploadedVideoURL = null;
+      let facecamDurationSec = 0; // Whole seconds
       let uploadedCSV = null;
       let csvData = {
         filename: '',
@@ -1243,11 +1569,45 @@ Paused
         removeBtn.addEventListener('click', () => {
           row.remove();
           calculateTotalDuration();
+          updateDurationHeader();
           updateAddButtonState();
         });
 
         const durationInput = row.querySelector('.duration-input');
-        durationInput.addEventListener('input', calculateTotalDuration);
+        durationInput.addEventListener('input', () => {
+          calculateTotalDuration();
+          updateDurationHeader();
+        });
+
+        // Add blur event for clamping
+        durationInput.addEventListener('blur', (e) => {
+          const currentVal = parseInt(e.target.value) || 0;
+          const remaining = calculateRemaining();
+          const allowedMax = remaining + currentVal;
+          const min = 1;
+
+          let newVal = currentVal;
+          let statusMsg = '';
+
+          if (currentVal < min) {
+            newVal = min;
+            if (newVal < 3) {
+              statusMsg = 'Very short scenes may feel jumpy';
+              updateStatusMessage('warning', statusMsg, 'warning', true);
+            }
+          } else if (currentVal > allowedMax && facecamDurationSec > 0) {
+            newVal = allowedMax;
+            statusMsg = `Adjusted to ${allowedMax}s to fit your facecam`;
+            updateStatusMessage('info', statusMsg, 'info', true);
+          }
+
+          if (newVal !== currentVal) {
+            e.target.value = newVal;
+          }
+
+          calculateTotalDuration();
+          updateDurationHeader();
+        });
 
         const typeSelect = row.querySelector('.entry-type-select');
         const urlInputContainer = row.querySelector('.url-input-container');
@@ -1287,6 +1647,7 @@ Paused
             const newRow = createTargetRow();
             websiteTargetsContainer.appendChild(newRow);
             calculateTotalDuration();
+            updateDurationHeader();
             updateAddButtonState();
           }
         });
@@ -1299,13 +1660,47 @@ Paused
           if (document.querySelectorAll('.website-target-row').length > 1) {
             row.remove();
             calculateTotalDuration();
+            updateDurationHeader();
             updateAddButtonState();
           }
         });
       });
 
       document.querySelectorAll('.duration-input').forEach(input => {
-        input.addEventListener('input', calculateTotalDuration);
+        input.addEventListener('input', () => {
+          calculateTotalDuration();
+          updateDurationHeader();
+        });
+
+        // Add blur event for clamping
+        input.addEventListener('blur', (e) => {
+          const currentVal = parseInt(e.target.value) || 0;
+          const remaining = calculateRemaining();
+          const allowedMax = remaining + currentVal;
+          const min = 1;
+
+          let newVal = currentVal;
+          let statusMsg = '';
+
+          if (currentVal < min) {
+            newVal = min;
+            if (newVal < 3) {
+              statusMsg = 'Very short scenes may feel jumpy';
+              updateStatusMessage('warning', statusMsg, 'warning', true);
+            }
+          } else if (currentVal > allowedMax && facecamDurationSec > 0) {
+            newVal = allowedMax;
+            statusMsg = `Adjusted to ${allowedMax}s to fit your facecam`;
+            updateStatusMessage('info', statusMsg, 'info', true);
+          }
+
+          if (newVal !== currentVal) {
+            e.target.value = newVal;
+          }
+
+          calculateTotalDuration();
+          updateDurationHeader();
+        });
       });
 
       document.querySelectorAll('.entry-type-select').forEach(select => {
@@ -1383,6 +1778,17 @@ Paused
             URL.revokeObjectURL(uploadedVideoURL);
           }
           uploadedVideoURL = URL.createObjectURL(file);
+
+          // Extract video duration
+          const videoElement = document.createElement('video');
+          videoElement.preload = 'metadata';
+          videoElement.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(videoElement.src);
+            facecamDurationSec = Math.floor(videoElement.duration); // Whole seconds
+            console.log(`[Duration] Facecam duration: ${facecamDurationSec}s`);
+            updateDurationHeader();
+          };
+          videoElement.src = URL.createObjectURL(file);
 
           // Update UI
           document.getElementById('videoFileName').textContent = file.name;
