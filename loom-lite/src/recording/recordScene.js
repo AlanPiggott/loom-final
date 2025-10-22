@@ -4,6 +4,8 @@ const { chromium } = require('playwright');
 const { doGoto, doWait, doClickText, doHighlight, doScroll } = require('./actions');
 const { retryWithBackoff } = require('../utils/retryWithBackoff');
 const { normalizeUrl } = require('../utils/urlNormalizer');
+const { hashString } = require('../utils/hashString');
+const { HME } = require('./index');
 const pixelmatchModule = require('pixelmatch');
 const pixelmatch = pixelmatchModule.default || pixelmatchModule;
 const { PNG } = require('pngjs');
@@ -171,7 +173,10 @@ async function recordScene(scene, ctx) {
       `--window-size=${w},${h}`,
       '--force-device-scale-factor=1',
       '--disable-renderer-backgrounding',
-      '--autoplay-policy=no-user-gesture-required'
+      '--autoplay-policy=no-user-gesture-required',
+      '--disable-frame-rate-limit',
+      '--disable-gpu-vsync',
+      '--disable-blink-features=AutomationControlled'
     ]
   });
 
@@ -210,6 +215,93 @@ async function recordScene(scene, ctx) {
   // Add 15s buffer to account for slow-loading pages (video-layer trim will find actual start)
   const recordDurationSec = scene.durationSec + 15;
   console.log(`[recordScene] Recording ${recordDurationSec}s (${scene.durationSec}s content + 15s buffer for slow pages)...`);
+
+  // Generate deterministic seed from campaign + scene for reproducible motion
+  const campaignId = path.basename(path.dirname(sceneDir));
+  const sceneIndex = scene.id;
+  const seed = hashString(`${campaignId}:${sceneIndex}`);
+
+  // Check if HME mode is enabled (default: replace)
+  const hmeMode = process.env.HME_MODE || 'replace';
+
+  if (hmeMode === 'replace' && (!scene.actions || scene.actions.length === 0)) {
+    // HME MODE: Automatic human-like interactions
+    console.log(`[recordScene] HME mode enabled, running automatic human motion (seed: ${seed})...`);
+
+    try {
+      const result = await HME.runScene(page, {
+        seed,
+        durationSec: scene.durationSec, // Use scene duration (not buffer)
+        url: scene.url
+      });
+
+      if (result.requiresAuth) {
+        // Mark scene as requiring authentication
+        const markerPath = path.join(sceneDir, 'requires_auth.txt');
+        fs.writeFileSync(markerPath, `Scene requires authentication: ${scene.url}\nDetected at: ${new Date().toISOString()}`);
+        console.log(`[recordScene] Scene marked as requires_auth, skipping...`);
+
+        // Wait a bit before closing
+        await page.waitForTimeout(2000);
+        await context.close();
+        await browser.close();
+
+        return { videoPath: null, requiresAuth: true };
+      }
+
+      if (result.skipped) {
+        console.log(`[recordScene] HME was skipped (manual mode), falling back to action system...`);
+        // Fall through to manual action system below
+      } else {
+        // HME completed successfully, now pad to buffer duration
+        const hmeDuration = result.elapsed || 0;
+        const bufferPadding = toMs(recordDurationSec) - hmeDuration;
+
+        if (bufferPadding > 0) {
+          console.log(`[recordScene] HME complete (${hmeDuration}ms), padding ${bufferPadding}ms to reach buffer duration...`);
+          await page.waitForTimeout(bufferPadding);
+        }
+
+        // Skip to video save section
+        console.log(`[recordScene] Scene recording complete, closing context and browser...`);
+        await context.close();
+        await browser.close();
+
+        try {
+          const webmPath = await video.path();
+          console.log(`[recordScene] Video saved to: ${webmPath}`);
+
+          if (!fs.existsSync(webmPath)) {
+            throw new Error(`Video file not found at path: ${webmPath}`);
+          }
+
+          const stats = fs.statSync(webmPath);
+          if (stats.size === 0) {
+            throw new Error(`Video file is empty: ${webmPath}`);
+          }
+          console.log(`[recordScene] Video file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+
+          const niceName = path.join(sceneDir, `${scene.id}.webm`);
+          if (webmPath !== niceName) {
+            fs.renameSync(webmPath, niceName);
+            console.log(`[recordScene] Video renamed to: ${niceName}`);
+          }
+
+          console.log(`[recordScene] Scene ${scene.id} saved successfully`);
+          return { videoPath: niceName };
+        } catch (error) {
+          console.error(`[recordScene] Error processing video:`, error.message);
+          throw new Error(`Failed to save video for scene ${scene.id}: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error(`[recordScene] HME error: ${error.message}, falling back to manual action system...`);
+      // Fall through to manual action system
+    }
+  }
+
+  // LEGACY MANUAL ACTION SYSTEM (fallback)
+  console.log(`[recordScene] Using manual action system...`);
 
   // Adjust remaining time to include buffer
   remaining = toMs(recordDurationSec);

@@ -8,8 +8,11 @@
 /**
  * Intro settle - cursor enters from off-screen and settles
  * Duration: ~1.2s
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function introSettle(hme, page) {
+async function introSettle(hme, page, maxBudgetMs = 1400) {
   const startTime = Date.now();
 
   // Get viewport center
@@ -26,7 +29,13 @@ async function introSettle(hme, page) {
   const startY = centerY - 80;
 
   await hme.moveTo(startX, startY, 120);
-  await hme.hover(400);
+
+  // FIX #3: Respect budget
+  if (Date.now() - startTime >= maxBudgetMs) {
+    return Date.now() - startTime;
+  }
+
+  await hme.hover(Math.min(400, maxBudgetMs - (Date.now() - startTime)));
 
   const elapsed = Date.now() - startTime;
   console.log(`[Beat] introSettle completed in ${elapsed}ms`);
@@ -36,8 +45,12 @@ async function introSettle(hme, page) {
 /**
  * Hover on navigation item by text
  * Duration: ~1.0-1.5s
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {string} navText - Text to search for in navigation
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function hoverNav(hme, page, navText) {
+async function hoverNav(hme, page, navText, maxBudgetMs = 1600) {
   const startTime = Date.now();
 
   try {
@@ -46,8 +59,18 @@ async function hoverNav(hme, page, navText) {
     const isVisible = await navItem.isVisible().catch(() => false);
 
     if (isVisible) {
+      // FIX #3: Check budget before move
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
       await hme.moveToElement(navItem, 90);
-      await hme.hover(700 + Math.round(200 * Math.random()));
+
+      // FIX #3: Calculate remaining budget for hover
+      const remaining = maxBudgetMs - (Date.now() - startTime);
+      if (remaining > 0) {
+        await hme.hover(Math.min(700 + Math.round(200 * Math.random()), remaining));
+      }
     } else {
       console.log(`[Beat] Nav item "${navText}" not found`);
     }
@@ -64,16 +87,28 @@ async function hoverNav(hme, page, navText) {
  * Natural scrolling drift with bursts and pauses
  * Cursor follows scroll and hovers over interesting elements
  * Duration: ~targetSeconds
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} targetSeconds - Target duration in seconds
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function scrollDrift(hme, page, targetSeconds = 6) {
+async function scrollDrift(hme, page, targetSeconds = 6, maxBudgetMs = null) {
   const startTime = Date.now();
   const targetMs = targetSeconds * 1000;
+  // FIX #3: Use maxBudgetMs if provided, otherwise use targetMs
+  const budget = maxBudgetMs !== null ? maxBudgetMs : targetMs;
 
   let elapsed = 0;
   let burstCount = 0;
   let scrollBackCount = 0;
 
-  while (elapsed < targetMs) {
+  while (elapsed < budget) {
+    // FIX #3: Check budget FIRST (hard stop)
+    if (Date.now() - startTime >= budget) {
+      console.log('[Beat] scrollDrift budget exceeded, exiting gracefully');
+      break;
+    }
+
     // Faster scroll burst with coordinated cursor movement
     const amplitude = 600 + Math.round(600 * Math.random()); // 600-1200px
     const duration = 300 + Math.round(300 * Math.random()); // 300-600ms
@@ -81,7 +116,7 @@ async function scrollDrift(hme, page, targetSeconds = 6) {
     burstCount++;
 
     elapsed = Date.now() - startTime;
-    if (elapsed >= targetMs) break;
+    if (elapsed >= budget) break;
 
     // Variable pause duration
     const isLongPause = Math.random() < 0.4;
@@ -89,7 +124,8 @@ async function scrollDrift(hme, page, targetSeconds = 6) {
       ? 1500 + Math.round(1500 * Math.random())
       : 400 + Math.round(400 * Math.random());
 
-    const actualPauseMs = Math.min(pauseMs, targetMs - elapsed);
+    // FIX #3: Cap pause to remaining budget
+    const actualPauseMs = Math.min(pauseMs, budget - elapsed);
 
     // During pause, 60% chance to hover over an interesting element
     if (Math.random() < 0.6) {
@@ -108,14 +144,21 @@ async function scrollDrift(hme, page, targetSeconds = 6) {
     }
 
     elapsed = Date.now() - startTime;
-    if (elapsed >= targetMs) break;
+    if (elapsed >= budget) break;
 
     // Occasional scroll-back to re-highlight content
     const shouldScrollBack = scrollBackCount < 3 && Math.random() < 0.25;
     if (shouldScrollBack) {
+      // FIX #3: Check budget before scroll-back
+      if (Date.now() - startTime >= budget) break;
+
       const scrollBackAmount = 150 + Math.round(150 * Math.random());
       await hme.scrollBurstWithCursor(-scrollBackAmount, 300);
-      await page.waitForTimeout(400 + Math.round(300 * Math.random()));
+
+      const pauseBudget = Math.min(400 + Math.round(300 * Math.random()), budget - (Date.now() - startTime));
+      if (pauseBudget > 0) {
+        await page.waitForTimeout(pauseBudget);
+      }
       scrollBackCount++;
       elapsed = Date.now() - startTime;
     }
@@ -129,8 +172,11 @@ async function scrollDrift(hme, page, targetSeconds = 6) {
 /**
  * Hover on a heading near the center of viewport
  * Duration: ~1.5-2.0s
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function hoverHeadingNearCenter(hme, page) {
+async function hoverHeadingNearCenter(hme, page, maxBudgetMs = 1500) {
   const startTime = Date.now();
 
   try {
@@ -165,10 +211,20 @@ async function hoverHeadingNearCenter(hme, page) {
     });
 
     if (headings) {
+      // FIX #3: Check budget before move
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
       const targetX = headings.x + headings.width / 2;
       const targetY = headings.y + 20;
       await hme.moveTo(targetX, targetY, headings.width);
-      await hme.hover(900 + Math.round(600 * Math.random()));
+
+      // FIX #3: Calculate remaining budget for hover
+      const remaining = maxBudgetMs - (Date.now() - startTime);
+      if (remaining > 0) {
+        await hme.hover(Math.min(900 + Math.round(600 * Math.random()), remaining));
+      }
     }
   } catch (err) {
     console.log(`[Beat] hoverHeadingNearCenter error: ${err.message}`);
@@ -182,8 +238,11 @@ async function hoverHeadingNearCenter(hme, page) {
 /**
  * Highlight a sentence by drag-selecting text
  * Duration: ~2.0-2.5s
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function highlightSentence(hme, page) {
+async function highlightSentence(hme, page, maxBudgetMs = 1800) {
   const startTime = Date.now();
 
   try {
@@ -211,17 +270,33 @@ async function highlightSentence(hme, page) {
     });
 
     if (paragraph) {
+      // FIX #3: Check budget before starting selection
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
       // Drag-select a portion of the text
       const startX = paragraph.x + 10;
       const endX = Math.min(paragraph.x + paragraph.width - 10, startX + 250);
       const y = paragraph.y + paragraph.height / 2;
 
       await hme.moveTo(startX, y, 30);
-      await page.waitForTimeout(200);
+
+      // FIX #3: Check budget before continuing
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
+      await page.waitForTimeout(Math.min(200, maxBudgetMs - (Date.now() - startTime)));
       await page.mouse.down();
       await hme.moveTo(endX, y, 30);
       await page.mouse.up();
-      await hme.hover(1400);
+
+      // FIX #3: Calculate remaining budget for hover
+      const remaining = maxBudgetMs - (Date.now() - startTime);
+      if (remaining > 100) {
+        await hme.hover(Math.min(1400, remaining - 100)); // Reserve 100ms for deselect
+      }
 
       // Click somewhere else to deselect
       await hme.moveTo(paragraph.x + paragraph.width + 50, y, 50);
@@ -239,8 +314,11 @@ async function highlightSentence(hme, page) {
 /**
  * Move to a CTA button with micro-overshoot and hover
  * Duration: ~1.2-1.5s
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} maxBudgetMs - Maximum time budget for this beat (FIX #3)
  */
-async function moveToCTAandHover(hme, page) {
+async function moveToCTAandHover(hme, page, maxBudgetMs = 1400) {
   const startTime = Date.now();
 
   try {
@@ -270,6 +348,11 @@ async function moveToCTAandHover(hme, page) {
     });
 
     if (cta) {
+      // FIX #3: Check budget before move
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
       const targetX = cta.x + cta.width / 2;
       const targetY = cta.y + cta.height / 2;
 
@@ -278,11 +361,22 @@ async function moveToCTAandHover(hme, page) {
       const overshootY = targetY + (Math.random() > 0.5 ? 2 : -2);
 
       await hme.moveTo(overshootX, overshootY, cta.width);
-      await page.waitForTimeout(80);
+
+      // FIX #3: Check budget before correction
+      if (Date.now() - startTime >= maxBudgetMs) {
+        return Date.now() - startTime;
+      }
+
+      await page.waitForTimeout(Math.min(80, maxBudgetMs - (Date.now() - startTime)));
 
       // Micro-correction
       await hme.moveTo(targetX, targetY, cta.width);
-      await hme.hover(800 + Math.round(400 * Math.random()));
+
+      // FIX #3: Calculate remaining budget for hover
+      const remaining = maxBudgetMs - (Date.now() - startTime);
+      if (remaining > 0) {
+        await hme.hover(Math.min(800 + Math.round(400 * Math.random()), remaining));
+      }
     }
   } catch (err) {
     console.log(`[Beat] moveToCTAandHover error: ${err.message}`);
@@ -295,25 +389,60 @@ async function moveToCTAandHover(hme, page) {
 
 /**
  * Idle motion - small cursor movements while "reading"
- * Duration: specified
+ * Duration: fills remaining time exactly using wall-clock timing
+ * @param {HumanMotionEngine} hme
+ * @param {Page} page
+ * @param {number} targetMs - Target duration in milliseconds
+ * @param {number} maxBudgetMs - Maximum time budget (hard cap)
  */
-async function idle(hme, page, durationMs) {
-  const startTime = Date.now();
+async function idle(hme, page, targetMs, maxBudgetMs = null) {
+  const start = Date.now();
+  const budget = Math.min(targetMs, maxBudgetMs ?? targetMs);
+  const rand = hme.rng; // CRITICAL: Use seeded RNG for determinism
 
-  const pos = hme.getCurrentPosition();
-  const numMoves = Math.floor(durationMs / 1500);
+  while (true) {
+    const elapsed = Date.now() - start;
+    const remaining = budget - elapsed;
 
-  for (let i = 0; i < numMoves; i++) {
-    const dx = (Math.random() - 0.5) * 40;
-    const dy = (Math.random() - 0.5) * 40;
-    await hme.moveTo(pos.x + dx, pos.y + dy, 60);
-    await hme.hover(400 + Math.round(400 * Math.random()));
+    // Exit if no time left or not enough for meaningful interaction
+    if (remaining <= 0 || remaining < 250) break;
 
-    if (Date.now() - startTime >= durationMs) break;
+    // CRITICAL: Get CURRENT position each iteration (not static)
+    const { x, y } = hme.getCurrentPosition();
+
+    // Small natural wander (±20-40px) using seeded RNG
+    const dx = (rand() - 0.5) * 40;
+    const dy = (rand() - 0.5) * 40;
+
+    // CRITICAL: Clamp move duration to remaining budget
+    // Reserve 300ms for hover after move
+    const moveMs = Math.min(
+      120 + Math.round(120 * rand()),
+      Math.max(0, remaining - 300)
+    );
+
+    if (moveMs > 0) {
+      await hme.moveTo(x + dx, y + dy, 60); // 60 = target width (Fitts' Law)
+    }
+
+    // Recompute remaining after move
+    const remaining2 = budget - (Date.now() - start);
+    if (remaining2 <= 0) break;
+
+    // CRITICAL: Clamp hover to remaining budget
+    const hoverMs = Math.min(
+      400 + Math.round(400 * rand()),
+      remaining2
+    );
+
+    if (hoverMs > 0) {
+      await hme.hover(hoverMs);
+    }
   }
 
-  const elapsed = Date.now() - startTime;
-  console.log(`[Beat] idle completed in ${elapsed}ms`);
+  const elapsed = Date.now() - start;
+  const drift = elapsed - budget;
+  console.log(`[Beat] idle budget=${budget}ms elapsed=${elapsed}ms drift=${drift}ms`);
   return elapsed;
 }
 

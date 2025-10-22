@@ -1,0 +1,24 @@
+{
+  "title": "newvid",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 320,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "webtrixdigital.com",
+      "durationSec": 111
+    }
+  ]
+}
