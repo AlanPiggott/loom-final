@@ -33,7 +33,9 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   console.log(`[overlayFacecam] Facecam has audio: ${faceHasAudio}`);
 
   const needPadSec = Math.max(0, bgDur - faceDur);
-  const startOffset = Math.max(0, faceCfg.startOffsetSec || 0);
+  const startOffset = Number(faceCfg.startOffsetSec) || 0;
+
+  console.log(`[overlayFacecam] startOffsetSec=${startOffset} | Mode: ${startOffset === 0 ? 'PASSTHROUGH (no delay)' : 'PADDED (intentional delay)'}`);
 
   const vPad = (faceCfg.endPadMode === 'freeze' && needPadSec > 0)
     ? `,tpad=stop_mode=clone:stop_duration=${needPadSec}`
@@ -70,15 +72,25 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   // Build filter based on whether facecam has audio
   let filter, mapArgs;
 
+  // Always normalize PTS to align facecam frame 0 with shadow/background (prevents white screen at start)
+  // When offset=0: normalize PTS only (no delay)
+  // When offset>0: normalize PTS + apply delay (tpad)
+  const videoProcessing = startOffset > 0
+    ? `setpts=PTS-STARTPTS${vDelay},crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba`
+    : `setpts=PTS-STARTPTS,crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba`;  // Normalize PTS to align with shadow/bg
+
   if (faceHasAudio) {
     // Facecam has audio - use Loom-style circular overlay with shadow
+    // IMPORTANT: Always normalize audio PTS to match video (video filters reset PTS to 0)
+    // When offset=0: normalize PTS, no delay (preserve sync)
+    // When offset>0: normalize PTS + add delay via silence concat
     const audioChain = startOffset > 0
-      ? `[1:a]adelay=${Math.floor(startOffset * 1000)}:all=1,apad[aud];`
-      : `[1:a]apad[aud];`;
+      ? `anullsrc=channel_layout=stereo:sample_rate=48000:duration=${startOffset}[silence];[1:a]asetpts=PTS-STARTPTS[aud_norm];[silence][aud_norm]concat=n=2:v=0:a=1[aud_concat];[aud_concat]asetpts=PTS-STARTPTS,apad[aud];`
+      : `[1:a]asetpts=PTS-STARTPTS,apad[aud];`;  // Normalize PTS to match video (no delay)
 
     filter = [
       // Step 1: Prepare facecam - crop to square, scale, format RGBA
-      `[1:v]setpts=PTS-STARTPTS${vDelay},crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba[cam_raw];`,
+      `[1:v]${videoProcessing}[cam_raw];`,
 
       // Step 2: Load and scale mask to match PiP size, extract alpha as grayscale, split for cam and shadow
       `[2:v]scale=${pipW}:${pipW},format=rgba,alphaextract,split[mask1][mask2];`,
@@ -105,7 +117,7 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
     // Facecam has no audio - Loom-style circular overlay with shadow, use background audio
     filter = [
       // Step 1: Prepare facecam - crop to square, scale, format RGBA
-      `[1:v]setpts=PTS-STARTPTS${vDelay},crop='min(iw,ih)':'min(iw,ih)':(iw-ow)/2:(ih-oh)/2,scale=${pipW}:${pipW}${vPad},format=rgba[cam_raw];`,
+      `[1:v]${videoProcessing}[cam_raw];`,
 
       // Step 2: Load and scale mask to match PiP size, extract alpha as grayscale, split for cam and shadow
       `[2:v]scale=${pipW}:${pipW},format=rgba,alphaextract,split[mask1][mask2];`,
