@@ -10,5 +10,9 @@
     "*.png"
   ],
   "ext": "js,json",
-  "exec": "node src/server.js"
+  "exec": "node src/server.js",
+  "verbose": true,
+  "stdout": true,
+  "colours": true,
+  "delay": 500
 }

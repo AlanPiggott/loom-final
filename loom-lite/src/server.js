@@ -1,3 +1,9 @@
+// STARTUP LOG (immediate output to confirm file is loading)
+const startupTime = new Date().toISOString();
+console.log(`\n${'='.repeat(60)}`);
+console.log(`[${startupTime}] Loom-Lite Server Starting...`);
+console.log(`${'='.repeat(60)}\n`);
+
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -94,11 +100,15 @@ app.post('/api/render', upload.fields([{ name: 'facecam', maxCount: 1 }, { name:
 
 const PORT = process.env.PORT || 3100;
 app.listen(PORT, () => {
-  console.log('='.repeat(50));
-  console.log(`✓ Server started successfully`);
-  console.log(`✓ UI: http://localhost:${PORT}`);
-  console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
-  console.log('='.repeat(50));
+  const readyTime = new Date().toISOString();
+  console.log('\n' + '='.repeat(60));
+  console.log(`✓ SERVER READY [${readyTime}]`);
+  console.log('='.repeat(60));
+  console.log(`  UI:           http://localhost:${PORT}`);
+  console.log(`  Health check: http://localhost:${PORT}/api/health`);
+  console.log(`  Render API:   http://localhost:${PORT}/api/render`);
+  console.log('='.repeat(60) + '\n');
+  console.log('Waiting for requests...\n');
 });
 
 // Global error handlers to prevent server crashes

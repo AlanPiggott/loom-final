@@ -1,6 +1,7 @@
 // Tiny action DSL implementations
 const { normalizeUrl } = require('../utils/urlNormalizer');
 const { retryWithBackoff } = require('../utils/retryWithBackoff');
+const { generateContentAwareScrollSegments, executeScrollSegments, generateScrollSegments } = require('../hme/scroll');
 
 async function doGoto(page, url) {
   // Normalize URL to ensure it has a protocol (https:// or http://)
@@ -63,27 +64,63 @@ async function doHighlight(page, text, ms = 2000) {
 }
 
 async function doScroll(page, pattern = 'slow-drift', durationMs = 5000) {
-  const stepMs = 120; // cadence
-  await page.evaluate(async ({ pattern, durationMs, stepMs }) => {
-    const t0 = performance.now();
-    const pause = ms => new Promise(r => setTimeout(r, ms));
-    const total = Math.max(0, document.body.scrollHeight - window.innerHeight);
-    let y = window.scrollY;
-    while (performance.now() - t0 < durationMs) {
-      if (pattern === 'pause-peek') {
-        window.scrollBy(0, window.innerHeight * 0.35);
-        await pause(stepMs * 8);
-        window.scrollBy(0, -window.innerHeight * 0.1);
-        await pause(stepMs * 5);
-      } else {
-        // slow-drift
-        const step = Math.max(1, total / 300);
-        y += step;
-        window.scrollTo({ top: y, behavior: 'instant' });
-        await pause(stepMs);
-      }
-    }
-  }, { pattern, durationMs, stepMs });
+  const startTime = Date.now();
+  console.log(`[doScroll] Starting ${pattern} scroll for ${durationMs}ms`);
+
+  // Use seeded RNG for deterministic scrolling (based on timestamp for variety)
+  const seed = Date.now();
+  let randState = seed;
+  const rand = () => {
+    randState = (randState * 1103515245 + 12345) & 0x7fffffff;
+    return randState / 0x7fffffff;
+  };
+
+  // Try content-aware scrolling first (pauses at headings like HME)
+  let segments = await generateContentAwareScrollSegments(page, {
+    totalDurationMs: durationMs,
+    rand
+  });
+
+  // Fallback to simple scrolling if no content found
+  if (!segments || segments.length === 0) {
+    console.log('[doScroll] No headings found, using simple scrolling');
+
+    const viewport = await page.evaluate(() => ({
+      height: window.innerHeight,
+      maxScroll: Math.max(0, document.body.scrollHeight - window.innerHeight)
+    }));
+
+    // Calculate scroll distance based on duration (1.5-2 viewports, not entire page)
+    const targetScrollPx = Math.min(
+      viewport.height * (1.5 + rand() * 0.5),
+      viewport.maxScroll
+    );
+
+    segments = generateScrollSegments({
+      totalDurationMs: durationMs,
+      targetScrollPx,
+      rand,
+      includePeekBack: pattern === 'pause-peek' || rand() > 0.5
+    });
+
+    console.log(`[doScroll] Simple plan: ${segments.length} segments, target=${targetScrollPx.toFixed(0)}px`);
+  } else {
+    console.log(`[doScroll] Content-aware plan: ${segments.length} segments`);
+  }
+
+  // Execute scroll segments with exact timing
+  await executeScrollSegments(page, segments, durationMs);
+
+  // CRITICAL: Ensure we always take EXACTLY durationMs by padding if needed
+  const elapsed = Date.now() - startTime;
+  const remaining = durationMs - elapsed;
+  if (remaining > 50) {
+    console.log(`[doScroll] Padding ${remaining}ms to match exact duration`);
+    await page.waitForTimeout(remaining);
+  }
+
+  const totalElapsed = Date.now() - startTime;
+  console.log(`[doScroll] Completed in ${totalElapsed}ms (target: ${durationMs}ms, drift: ${totalElapsed - durationMs}ms)`);
 }
 
 module.exports = { doGoto, doWait, doClickText, doHighlight, doScroll };

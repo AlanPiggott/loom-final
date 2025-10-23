@@ -11,7 +11,8 @@ function overlayExpr(corner, margin) {
   }
 }
 
-async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
+// NOTE: trimStartSec parameter is deprecated and unused (bg.mp4 is already trimmed by normalizeScene)
+async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 0) {
   const out = path.join(path.dirname(bgPath), '..', 'final.mp4');
   const pipW = faceCfg.pip?.width || 230;
   const margin = faceCfg.pip?.margin || 40;
@@ -22,8 +23,7 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   const maskPath = path.join(__dirname, '../assets/masks/rounded_square.png');
 
   const bgMeta = await ffprobeJson(bgPath);
-  const bgDurOriginal = parseFloat(bgMeta.format?.duration || '0');
-  const bgDur = Math.max(0, bgDurOriginal - trimStartSec);
+  const bgDur = parseFloat(bgMeta.format?.duration || '0');
 
   const faceMeta = await ffprobeJson(faceCfg.path);
   const faceDur = parseFloat(faceMeta.format?.duration || '0');
@@ -32,10 +32,14 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   const faceHasAudio = faceMeta.streams?.some(s => s.codec_type === 'audio');
   console.log(`[overlayFacecam] Facecam has audio: ${faceHasAudio}`);
 
+  // DEBUG: Print all duration values
+  console.log(`[overlayFacecam] DEBUG: bgDur=${bgDur}s, faceDur=${faceDur}s, ctx.fps=${ctx.fps}`);
+
   const needPadSec = Math.max(0, bgDur - faceDur);
   const startOffset = Number(faceCfg.startOffsetSec) || 0;
 
   console.log(`[overlayFacecam] startOffsetSec=${startOffset} | Mode: ${startOffset === 0 ? 'PASSTHROUGH (no delay)' : 'PADDED (intentional delay)'}`);
+  console.log(`[overlayFacecam] Shadow duration will be: ${bgDur}s at ${ctx.fps}fps`);
 
   const vPad = (faceCfg.endPadMode === 'freeze' && needPadSec > 0)
     ? `,tpad=stop_mode=clone:stop_duration=${needPadSec}`
@@ -84,9 +88,10 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
     // IMPORTANT: Always normalize audio PTS to match video (video filters reset PTS to 0)
     // When offset=0: normalize PTS, no delay (preserve sync)
     // When offset>0: normalize PTS + add delay via silence concat
+    // FIX: Explicitly set apad duration to bgDur to prevent 25-hour audio bug (apad auto-detect fails with complex filter chains)
     const audioChain = startOffset > 0
-      ? `anullsrc=channel_layout=stereo:sample_rate=48000:duration=${startOffset}[silence];[1:a]asetpts=PTS-STARTPTS[aud_norm];[silence][aud_norm]concat=n=2:v=0:a=1[aud_concat];[aud_concat]asetpts=PTS-STARTPTS,apad[aud];`
-      : `[1:a]asetpts=PTS-STARTPTS,apad[aud];`;  // Normalize PTS to match video (no delay)
+      ? `anullsrc=channel_layout=stereo:sample_rate=48000:duration=${startOffset}[silence];[1:a]asetpts=PTS-STARTPTS[aud_norm];[silence][aud_norm]concat=n=2:v=0:a=1[aud_concat];[aud_concat]asetpts=PTS-STARTPTS,apad=whole_dur=${bgDur}[aud];`
+      : `[1:a]asetpts=PTS-STARTPTS,apad=whole_dur=${bgDur}[aud];`;  // Normalize PTS to match video (no delay)
 
     filter = [
       // Step 1: Prepare facecam - crop to square, scale, format RGBA
@@ -140,7 +145,7 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
   }
 
   const ffmpegArgs = [
-    '-ss', String(trimStartSec), // Trim first N seconds of background video
+    // NOTE: No -ss trimStartSec needed - bg.mp4 is already trimmed by normalizeScene
     '-i', bgPath,
     '-i', faceCfg.path,
     '-i', maskPath, // Add mask as 3rd input
@@ -150,7 +155,7 @@ async function overlayFacecam(bgPath, faceCfg, ctx, trimStartSec = 3) {
     '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '128k', '-ar', '48000',
     '-movflags', '+faststart',
-    '-shortest',
+    // No -shortest flag: overlay filters use shortest=1, facecam is padded to match bg duration
     out
   ];
 
