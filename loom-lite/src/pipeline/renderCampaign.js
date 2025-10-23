@@ -65,7 +65,7 @@ async function renderCampaign(configPathOrObj) {
   const ctx = {
     w: cfg.output.width || 1920,
     h: cfg.output.height || 1080,
-    fps: cfg.output.fps || 30,
+    fps: cfg.output.fps || 60,
     pageLoadWaitMs: cfg.output.pageLoadWaitMs !== undefined ? cfg.output.pageLoadWaitMs : 7000,
     workDir,
     cacheDir
@@ -92,6 +92,17 @@ async function renderCampaign(configPathOrObj) {
   }
 
   console.log('[renderCampaign] ✓ Duration validation passed');
+
+  // Enforce maximum campaign duration of 5 minutes
+  const MAX_CAMPAIGN_DURATION_SEC = 300; // 5 minutes
+  if (scenesTotalDur > MAX_CAMPAIGN_DURATION_SEC) {
+    const errorMsg = `Campaign too long: ${scenesTotalDur}s exceeds maximum ${MAX_CAMPAIGN_DURATION_SEC}s (5 minutes). ` +
+                     `Reduce scene durations or number of scenes.`;
+    console.error(`[renderCampaign] ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
+
+  console.log(`[renderCampaign] ✓ Campaign duration within limit (${scenesTotalDur}s / ${MAX_CAMPAIGN_DURATION_SEC}s)`);
 
   // 1) Record scenes (with caching)
   // Fail entire render if ANY scene fails after retries
