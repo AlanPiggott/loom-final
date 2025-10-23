@@ -465,7 +465,11 @@ Paused
             <div id="step2" class="wizard-step hidden">
               <div class="max-w-5xl">
                 <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-2 tracking-tight">Target Websites</h2>
-                <p class="text-subtext-light dark:text-subtext-dark mb-4">Configure the websites you want to record and set the duration for each.</p>
+                <p class="text-subtext-light dark:text-subtext-dark mb-2">Configure the websites you want to record and set the duration for each.</p>
+                <div class="flex items-center gap-2 mb-4 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <span class="material-icons text-blue-600 dark:text-blue-400 text-lg">info</span>
+                  <span class="text-sm text-blue-700 dark:text-blue-300 font-medium">Maximum campaign duration: 5 minutes (300 seconds)</span>
+                </div>
 
                 <!-- Duration Overview Header -->
                 <div class="duration-overview bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-700/30 border border-border-light/60 dark:border-border-dark/60 rounded-xl p-5 mb-6 shadow-sm">
@@ -531,8 +535,8 @@ Paused
                       <span class="text-sm text-subtext-light dark:text-subtext-dark font-medium">sec</span>
                       <div class="relative group">
                         <span class="material-icons text-gray-400 dark:text-gray-500 text-sm cursor-help">info_outline</span>
-                        <div class="tooltip-text absolute left-0 top-6 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
-                          Scene duration in seconds. Min 1s, max based on remaining time.
+                        <div class="tooltip-text absolute left-0 top-6 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
+                          Scene duration in seconds. Min 1s, max based on remaining time. Total campaign max: 300s (5 min).
                         </div>
                       </div>
                     </div>
