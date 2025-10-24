@@ -8,7 +8,8 @@ import { NextResponse } from 'next/server';
  */
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Auth guard
     const {

@@ -9,7 +9,8 @@ import { nanoid } from 'nanoid';
  */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Auth guard
     const {

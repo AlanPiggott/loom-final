@@ -11,7 +11,7 @@ export default function LoginPage() {
   useEffect(() => {
     // optional: redirect to home if already signed in
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = '/campaigns';
+      if (data.session) window.location.href = '/dashboard';
     });
   }, [supabase]);
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           providers={[]}
-          redirectTo="http://localhost:3000"
+          redirectTo="http://localhost:3000/auth/callback"
           magicLink
         />
       </div>
