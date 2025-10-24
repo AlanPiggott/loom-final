@@ -343,3 +343,77 @@ export async function POST(request: Request) {
 - **loom-lite (Express):** Port 3100
 
 Both must be running for full functionality. However, vidgen-app can run independently for UI/API development.
+
+## Security Best Practices
+
+### Secret Management
+
+**NEVER commit actual secrets to git.** This project has multiple layers of protection:
+
+1. **.gitignore Protection**
+   - `.env*` pattern blocks all .env files by default
+   - `!.env.example` explicitly allows the template file
+   - `.env.local` contains your actual secrets and is NEVER committed
+
+2. **Pre-commit Hook** (`.git/hooks/pre-commit`)
+   - Automatically scans staged files for secret patterns
+   - Blocks commits containing:
+     - Supabase URLs and keys
+     - API keys, secret keys, private keys
+     - AWS credentials
+     - Password strings
+   - Allows `.env.example` with placeholder values
+   - Can be bypassed with `git commit --no-verify` for false positives
+
+3. **File Organization**
+   ```
+   .env.local        # Your actual secrets (NEVER commit)
+   .env.example      # Template with placeholders (SAFE to commit)
+   ```
+
+### What to Do If Secrets Are Exposed
+
+If you accidentally commit secrets to GitHub:
+
+1. **Rotate the compromised credentials immediately**
+   - Supabase: Generate new anon/service keys in dashboard
+   - API keys: Revoke and regenerate in the service provider
+
+2. **Remove from git history** (if just committed):
+   ```bash
+   git reset HEAD~1  # Undo last commit
+   # OR
+   git rebase -i HEAD~5  # Edit last 5 commits
+   ```
+
+3. **For pushed commits**: Contact your team to coordinate the fix, as rewriting pushed history affects all developers.
+
+### Supabase Security
+
+**Anon Key vs Service Role Key:**
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Safe to expose in browser (limited by RLS)
+- `SUPABASE_SERVICE_ROLE_KEY`: NEVER expose - bypasses RLS (server-side only)
+
+The anon key is public by design - security is enforced by Row Level Security (RLS) policies in the database.
+
+**Service Role Key Usage:**
+If you need the service role key for admin operations:
+- Add it to `.env.local` WITHOUT the `NEXT_PUBLIC_` prefix
+- Only use in server-side code (API routes, not client components)
+- Never log it or send it in responses
+
+### GitHub Secret Scanning
+
+GitHub automatically scans for leaked credentials. If you receive an alert:
+- Take it seriously - secrets may already be compromised
+- Follow the rotation steps above
+- Review your `.gitignore` and pre-commit hook
+- Check that `.env.local` was never committed: `git log --all --full-history -- "**/.env.local"`
+
+### Additional Security Measures
+
+1. **Enable 2FA** on critical services (GitHub, Supabase, AWS, etc.)
+2. **Use environment-specific credentials** (dev vs production)
+3. **Regularly rotate secrets** even if not compromised
+4. **Limit secret access** to only team members who need it
+5. **Monitor for unusual activity** in service provider dashboards
