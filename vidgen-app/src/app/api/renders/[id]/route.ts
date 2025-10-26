@@ -6,8 +6,9 @@ import { NextResponse } from 'next/server';
  * GET /api/renders/[id]
  * Poll render status (ownership verified via campaign RLS)
  */
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
@@ -38,7 +39,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         campaigns!inner (id)
       `
       )
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     // If no render found, it's either non-existent or not owned by user

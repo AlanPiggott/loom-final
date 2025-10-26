@@ -1,0 +1,57 @@
+{
+  "title": "scrol-video-3",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 230,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://astrea.com.au",
+      "durationSec": 30,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 27000
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "url": "webtrixdigital.com",
+      "durationSec": 81,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 78000
+        }
+      ]
+    }
+  ]
+}

@@ -6,8 +6,9 @@ import { NextResponse } from 'next/server';
  * GET /api/campaigns/[id]
  * Get campaign details with scenes and latest render
  */
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
@@ -24,8 +25,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
     // Query campaign (RLS will filter by user_id automatically)
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
-      .select('id, name, created_at')
-      .eq('id', params.id)
+      .select('id, name, created_at, lead_row_count, lead_csv_filename, lead_csv_url')
+      .eq('id', id)
       .single();
 
     // If no campaign found, it's either non-existent or not owned by user
@@ -37,8 +38,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
     // Query scenes ordered by order_index
     const { data: scenes, error: scenesError } = await supabase
       .from('scenes')
-      .select('id, url, duration_sec, order_index')
-      .eq('campaign_id', params.id)
+      .select('id, url, duration_sec, order_index, entry_type, csv_column')
+      .eq('campaign_id', id)
       .order('order_index', { ascending: true });
 
     if (scenesError) {
@@ -49,10 +50,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     // Query latest render
     const { data: renders, error: renderError } = await supabase
       .from('renders')
-      .select('id, status, progress, public_id, final_video_url, thumb_url')
-      .eq('campaign_id', params.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .select('id, status, progress, public_id, final_video_url, thumb_url, error, lead_row_index, lead_identifier, created_at')
+      .eq('campaign_id', id)
+      .order('created_at', { ascending: false });
 
     if (renderError) {
       console.error('[GET /api/campaigns/[id]] Render query error:', renderError);
@@ -64,6 +64,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({
       campaign,
       scenes: scenes || [],
+      renders: renders || [],
       latestRender,
     });
   } catch (error) {

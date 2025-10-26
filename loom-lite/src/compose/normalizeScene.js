@@ -13,11 +13,14 @@ async function normalizeScene(inputWebm, ctx, scene) {
   console.log(`[normalizeScene] Trimming first ${trimStartSec.toFixed(3)}s from scene ${scene.id} (content-driven detection)`);
   console.log(`[normalizeScene] Output duration: ${scene.durationSec}s of clean content`);
 
-  // Frame-accurate seeking: -ss AFTER -i for precise frame positioning
+  // Frame-accurate encoding: Use -vframes ONLY (not -to) for precise duration
+  // When input fps != output fps, -vframes is more reliable than timestamp-based trimming
+  const targetFrames = Math.round(scene.durationSec * ctx.fps);
+
   const ffmpegArgs = [
     '-i', inputWebm,
     '-ss', String(trimStartSec), // Skip white lead-in (frame-accurate when after -i)
-    '-frames:v', String(Math.round(scene.durationSec * ctx.fps)), // Output exact frame count for precise duration
+    '-vframes', String(targetFrames), // Exact frame count = exact duration
     '-r', String(ctx.fps),
     '-vf', `scale=${ctx.w}:${ctx.h},setsar=1`,
     '-pix_fmt', 'yuv420p',

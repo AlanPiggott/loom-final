@@ -12,7 +12,7 @@ async function ensureFfmpeg() {
 
 async function ffprobeJson(file) {
   const { stdout } = await execFile('ffprobe', [
-    '-v','error','-select_streams','v:0','-show_entries','stream=width,height,avg_frame_rate,duration,codec_name',
+    '-v','error','-show_entries','stream=width,height,avg_frame_rate,duration,codec_name,codec_type,channels,sample_rate',
     '-show_format','-of','json', file
   ]);
   return JSON.parse(stdout);

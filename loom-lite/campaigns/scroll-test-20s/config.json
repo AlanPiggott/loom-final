@@ -1,0 +1,38 @@
+{
+  "title": "scroll-test-20s",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam-20s.mp4",
+      "pip": {
+        "width": 230,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "webtrixdigital.com",
+      "durationSec": 20,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 17000
+        }
+      ]
+    }
+  ]
+}

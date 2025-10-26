@@ -1,0 +1,35 @@
+{
+  "title": "fokq - Lead 1",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 60,
+    "pageLoadWaitMs": 3000,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 320,
+        "corner": "bottom-right",
+        "margin": 24
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://webtrixdigital.com/",
+      "durationSec": 30,
+      "entryType": "manual",
+      "csvColumn": null
+    },
+    {
+      "id": "scene-2",
+      "url": "https://benang.com.au",
+      "durationSec": 81,
+      "entryType": "csv",
+      "csvColumn": "website"
+    }
+  ],
+  "__baseDir": "/Users/Alan Piggott/loom outreach final/loom-lite/campaigns/fokq-b35b2e07-d5c4-470c-a711-4b6d8fb5adcf"
+}

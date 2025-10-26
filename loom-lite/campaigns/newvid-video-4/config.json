@@ -1,0 +1,39 @@
+{
+  "title": "newvid-video-4",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 230,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "startOffsetSec": 0.5,
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "webtrixdigital.com",
+      "durationSec": 53,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 50000
+        }
+      ]
+    }
+  ]
+}

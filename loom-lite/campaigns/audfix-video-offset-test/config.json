@@ -1,0 +1,58 @@
+{
+  "title": "audfix-video-offset-test",
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 230,
+        "margin": 24,
+        "corner": "bottom-right"
+      },
+      "startOffsetSec": 0.5,
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://benang.com.au",
+      "durationSec": 30,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 27000
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "url": "https://screencharm.com/",
+      "durationSec": 81,
+      "actions": [
+        {
+          "type": "goto"
+        },
+        {
+          "type": "wait",
+          "ms": 2000
+        },
+        {
+          "type": "scroll",
+          "pattern": "slow-drift",
+          "ms": 78000
+        }
+      ]
+    }
+  ]
+}

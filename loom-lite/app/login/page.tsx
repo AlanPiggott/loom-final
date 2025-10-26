@@ -1,0 +1,30 @@
+'use client';
+
+import { useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Auth, ThemeSupa } from '@supabase/auth-ui-react';
+
+export default function LoginPage() {
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    // optional: redirect to home if already signed in
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = '/campaigns';
+    });
+  }, [supabase]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <Auth
+          supabaseClient={supabase}
+          appearance={{ theme: ThemeSupa }}
+          providers={[]}
+          redirectTo="http://localhost:3100"
+          magicLink
+        />
+      </div>
+    </div>
+  );
+}

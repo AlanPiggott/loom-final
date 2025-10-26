@@ -1,0 +1,26 @@
+{
+  "title": "upload",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 60,
+    "pageLoadWaitMs": 3000,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 320,
+        "corner": "bottom-right",
+        "margin": 24
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://webtrixdigital.com/",
+      "durationSec": 30
+    }
+  ],
+  "__baseDir": "/Users/Alan Piggott/loom outreach final/loom-lite/campaigns/upload-324c3d4a-20a3-48df-ad04-3db4a619a193"
+}

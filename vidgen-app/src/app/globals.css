@@ -10,6 +10,20 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: 'Inter', sans-serif;
+
+  /* Custom VidGen Dashboard Colors */
+  --color-primary: #0066FF;
+  --color-background-light: #F8FAFC;
+  --color-background-dark: #1E293B;
+  --color-foreground-light: #FFFFFF;
+  --color-foreground-dark: #334155;
+  --color-text-light: #334155;
+  --color-text-dark: #CBD5E1;
+  --color-subtext-light: #64748B;
+  --color-subtext-dark: #94A3B8;
+  --color-border-light: #E2E8F0;
+  --color-border-dark: #334155;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +37,201 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Dashboard Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.5s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out backwards;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.4s ease-out 0.1s backwards;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeIn,
+  .animate-slideDown,
+  .animate-slideUp,
+  .animate-scaleIn,
+  .animate-slideInLeft,
+  .animate-slideInRight {
+    animation: none;
+  }
+}
+
+/* Material Icons sizing */
+.material-icons {
+  font-size: 20px;
+}
+
+/* Wizard: Duration Pill Colors */
+.remaining-pill.green {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.remaining-pill.amber {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.remaining-pill.red {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.remaining-pill.neutral {
+  background: #9ca3af !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+/* Wizard: Status Message Styles */
+.status-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-neutral {
+  background-color: transparent;
+  color: #6b7280;
+}
+
+/* Dark mode status messages */
+@media (prefers-color-scheme: dark) {
+  .status-success {
+    background-color: #064e3b;
+    color: #6ee7b7;
+  }
+
+  .status-warning {
+    background-color: #78350f;
+    color: #fcd34d;
+  }
+
+  .status-error {
+    background-color: #7f1d1d;
+    color: #fca5a5;
+  }
+
+  .status-info {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+  }
+}
+
+/* Wizard: Tooltip Styles */
+.tooltip-text {
+  pointer-events: none;
+}
+
+.tooltip-text::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 12px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid #111827;
 }

@@ -7,8 +7,9 @@ import { nanoid } from 'nanoid';
  * POST /api/campaigns/[id]/render
  * Enqueue a new render job for the campaign
  */
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
@@ -25,8 +26,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // Verify campaign exists and user owns it (RLS will filter)
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
-      .select('id')
-      .eq('id', params.id)
+      .select('id, lead_csv_url, lead_row_count, lead_csv_filename')
+      .eq('id', id)
       .single();
 
     if (campaignError || !campaign) {
@@ -39,7 +40,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const { data: existingRenders, error: duplicateCheckError } = await supabase
       .from('renders')
       .select('id, status')
-      .eq('campaign_id', params.id)
+      .eq('campaign_id', id)
       .in('status', inProgressStates)
       .limit(1);
 
@@ -58,8 +59,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // Get scenes to calculate total duration
     const { data: scenes, error: scenesError } = await supabase
       .from('scenes')
-      .select('duration_sec')
-      .eq('campaign_id', params.id);
+      .select('duration_sec, entry_type, csv_column')
+      .eq('campaign_id', id);
 
     if (scenesError) {
       console.error('[POST /api/campaigns/[id]/render] Scenes query error:', scenesError);
@@ -71,13 +72,73 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const totalDuration = scenes.reduce((sum, scene) => sum + scene.duration_sec, 0);
+    const usesCsvScenes = scenes.some((scene: { entry_type?: string | null }) => scene.entry_type === 'csv');
 
     // Create render record
+    if (usesCsvScenes) {
+      if (!campaign.lead_csv_url) {
+        return NextResponse.json({ error: 'Lead CSV is missing for this campaign' }, { status: 422 });
+      }
+
+      const leadCount = Math.max(0, campaign.lead_row_count ?? 0);
+      if (leadCount === 0) {
+        return NextResponse.json({ error: 'Lead CSV has no rows to render' }, { status: 422 });
+      }
+
+      const renderRecords = Array.from({ length: leadCount }, (_, rowIndex) => ({
+        campaign_id: id,
+        status: 'queued',
+        progress: 0,
+        public_id: nanoid(),
+        duration_sec: totalDuration,
+        lead_row_index: rowIndex,
+        lead_identifier: `Lead ${rowIndex + 1}`,
+      }));
+
+      const { data: renderedRows, error: renderInsertError } = await supabase
+        .from('renders')
+        .insert(renderRecords)
+        .select('id, lead_row_index');
+
+      if (renderInsertError) {
+        console.error('[POST /api/campaigns/[id]/render] Render insert error:', renderInsertError);
+        return NextResponse.json({ error: 'Failed to create renders' }, { status: 500 });
+      }
+
+      const jobRecords = (renderedRows || []).map((renderRow) => ({
+        render_id: renderRow.id,
+        campaign_id: id,
+        state: 'queued',
+        lead_row_index: renderRow.lead_row_index,
+      }));
+
+      const { error: jobInsertError } = await supabase
+        .from('render_jobs')
+        .insert(jobRecords);
+
+      if (jobInsertError) {
+        console.error('[POST /api/campaigns/[id]/render] Job insert error:', jobInsertError);
+        const renderIds = (renderedRows || []).map((row) => row.id);
+        if (renderIds.length > 0) {
+          await supabase.from('renders').delete().in('id', renderIds);
+        }
+        return NextResponse.json({ error: 'Failed to create render jobs' }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        {
+          renderIds: (renderedRows || []).map((row) => row.id),
+          count: renderedRows?.length || 0,
+        },
+        { status: 201 }
+      );
+    }
+
     const publicId = nanoid();
     const { data: render, error: renderError } = await supabase
       .from('renders')
       .insert({
-        campaign_id: params.id,
+        campaign_id: id,
         status: 'queued',
         progress: 0,
         public_id: publicId,
@@ -96,6 +157,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .from('render_jobs')
       .insert({
         render_id: render.id,
+        campaign_id: id, // Add campaign_id to the insert
         state: 'queued',
       });
 

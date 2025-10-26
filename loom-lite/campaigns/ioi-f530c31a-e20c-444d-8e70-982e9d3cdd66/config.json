@@ -1,0 +1,18 @@
+{
+  "title": "ioi",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 60,
+    "pageLoadWaitMs": 3000,
+    "facecam": null
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://webtrixdigital.com/",
+      "durationSec": 30
+    }
+  ],
+  "__baseDir": "/Users/Alan Piggott/loom outreach final/loom-lite/campaigns/ioi-f530c31a-e20c-444d-8e70-982e9d3cdd66"
+}

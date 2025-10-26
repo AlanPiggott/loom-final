@@ -1,0 +1,31 @@
+{
+  "title": "fsec",
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 60,
+    "pageLoadWaitMs": 3000,
+    "facecam": {
+      "path": "./facecam.mp4",
+      "pip": {
+        "width": 320,
+        "corner": "bottom-right",
+        "margin": 24
+      },
+      "endPadMode": "freeze"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "url": "https://webtrixdigital.com/",
+      "durationSec": 30
+    },
+    {
+      "id": "scene-2",
+      "url": "https://benang.com.au/",
+      "durationSec": 81
+    }
+  ],
+  "__baseDir": "/Users/Alan Piggott/loom outreach final/loom-lite/campaigns/fsec-a68adc3d-b6d1-4780-a55b-9ea6f1cd096c"
+}

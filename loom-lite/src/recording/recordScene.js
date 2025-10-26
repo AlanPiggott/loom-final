@@ -4,11 +4,10 @@ const { chromium } = require('playwright');
 const { doGoto, doWait, doClickText, doHighlight, doScroll } = require('./actions');
 const { retryWithBackoff } = require('../utils/retryWithBackoff');
 const { normalizeUrl } = require('../utils/urlNormalizer');
-const { hashString } = require('../utils/hashString');
-const { HME } = require('./index');
 const pixelmatchModule = require('pixelmatch');
 const pixelmatch = pixelmatchModule.default || pixelmatchModule;
 const { PNG } = require('pngjs');
+const HME = require('../hme');
 
 function toMs(sec) { return Math.max(0, Math.floor(sec * 1000)); }
 
@@ -216,122 +215,56 @@ async function recordScene(scene, ctx) {
   const recordDurationSec = scene.durationSec + 15;
   console.log(`[recordScene] Recording ${recordDurationSec}s (${scene.durationSec}s content + 15s buffer for slow pages)...`);
 
-  // Generate deterministic seed from campaign + scene for reproducible motion
-  const campaignId = path.basename(path.dirname(sceneDir));
-  const sceneIndex = scene.id;
-  const seed = hashString(`${campaignId}:${sceneIndex}`);
+  // CHECK IF SCENE HAS ACTIONS OR SHOULD USE HME
+  if (!scene.actions || scene.actions.length === 0) {
+    // Use Human Motion Engine v2 for natural behavior
+    console.log(`[recordScene] Using Human Motion Engine v2 (no actions defined)...`);
 
-  // Check if HME mode is enabled (default: replace)
-  const hmeMode = process.env.HME_MODE || 'replace';
+    // HME handles exact timing, so we record for the actual scene duration
+    // (not recordDurationSec which has buffer - HME doesn't need it)
+    await HME.runScene(page, {
+      url: scene.url,
+      durationSec: scene.durationSec
+    });
 
-  if (hmeMode === 'replace' && (!scene.actions || scene.actions.length === 0)) {
-    // HME MODE: Automatic human-like interactions
-    console.log(`[recordScene] HME mode enabled, running automatic human motion (seed: ${seed})...`);
+    // After HME completes, record buffer time (15s) for safety
+    const bufferSec = 15;
+    console.log(`[recordScene] Recording ${bufferSec}s buffer after HME...`);
+    await page.waitForTimeout(toMs(bufferSec));
+  } else {
+    // MANUAL ACTION SYSTEM
+    console.log(`[recordScene] Using manual action system...`);
 
-    try {
-      const result = await HME.runScene(page, {
-        seed,
-        durationSec: scene.durationSec, // Use scene duration (not buffer)
-        url: scene.url
-      });
+    // Adjust remaining time to include buffer
+    remaining = toMs(recordDurationSec);
 
-      if (result.requiresAuth) {
-        // Mark scene as requiring authentication
-        const markerPath = path.join(sceneDir, 'requires_auth.txt');
-        fs.writeFileSync(markerPath, `Scene requires authentication: ${scene.url}\nDetected at: ${new Date().toISOString()}`);
-        console.log(`[recordScene] Scene marked as requires_auth, skipping...`);
-
-        // Wait a bit before closing
-        await page.waitForTimeout(2000);
-        await context.close();
-        await browser.close();
-
-        return { videoPath: null, requiresAuth: true };
-      }
-
-      if (result.skipped) {
-        console.log(`[recordScene] HME was skipped (manual mode), falling back to action system...`);
-        // Fall through to manual action system below
-      } else {
-        // HME completed successfully, now pad to buffer duration
-        const hmeDuration = result.elapsed || 0;
-        const bufferPadding = toMs(recordDurationSec) - hmeDuration;
-
-        if (bufferPadding > 0) {
-          console.log(`[recordScene] HME complete (${hmeDuration}ms), padding ${bufferPadding}ms to reach buffer duration...`);
-          await page.waitForTimeout(bufferPadding);
+    for (const action of (scene.actions || [])) {
+      if (remaining <= 0) break;
+      switch (action.type) {
+        case 'goto':
+          const normalizedUrl = normalizeUrl(scene.url);
+          await page.goto(normalizedUrl, {
+            waitUntil: 'domcontentloaded',
+            timeout: 15000
+          });
+          // Don't consume navigation time
+          break;
+        case 'wait': await doWait(page, action.ms || 1000); consume(action.ms || 1000); break;
+        case 'clickText': await doClickText(page, action.text || ''); consume(800); break;
+        case 'highlight': await doHighlight(page, action.text || '', action.ms || 2000); consume(action.ms || 2000); break;
+        case 'scroll': {
+          const ms = Math.max(1000, Math.min(remaining - 300, action.ms || remaining - 300));
+          await doScroll(page, action.pattern || 'slow-drift', ms);
+          consume(ms);
+          break;
         }
-
-        // Skip to video save section
-        console.log(`[recordScene] Scene recording complete, closing context and browser...`);
-        await context.close();
-        await browser.close();
-
-        try {
-          const webmPath = await video.path();
-          console.log(`[recordScene] Video saved to: ${webmPath}`);
-
-          if (!fs.existsSync(webmPath)) {
-            throw new Error(`Video file not found at path: ${webmPath}`);
-          }
-
-          const stats = fs.statSync(webmPath);
-          if (stats.size === 0) {
-            throw new Error(`Video file is empty: ${webmPath}`);
-          }
-          console.log(`[recordScene] Video file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-
-          const niceName = path.join(sceneDir, `${scene.id}.webm`);
-          if (webmPath !== niceName) {
-            fs.renameSync(webmPath, niceName);
-            console.log(`[recordScene] Video renamed to: ${niceName}`);
-          }
-
-          console.log(`[recordScene] Scene ${scene.id} saved successfully`);
-          return { videoPath: niceName };
-        } catch (error) {
-          console.error(`[recordScene] Error processing video:`, error.message);
-          throw new Error(`Failed to save video for scene ${scene.id}: ${error.message}`);
-        }
+        default: break;
       }
-    } catch (error) {
-      console.error(`[recordScene] HME error: ${error.message}, falling back to manual action system...`);
-      // Fall through to manual action system
     }
+
+    // Fill the rest of the scene
+    if (remaining > 0) await page.waitForTimeout(remaining);
   }
-
-  // LEGACY MANUAL ACTION SYSTEM (fallback)
-  console.log(`[recordScene] Using manual action system...`);
-
-  // Adjust remaining time to include buffer
-  remaining = toMs(recordDurationSec);
-
-  for (const action of (scene.actions || [])) {
-    if (remaining <= 0) break;
-    switch (action.type) {
-      case 'goto':
-        const normalizedUrl = normalizeUrl(scene.url);
-        await page.goto(normalizedUrl, {
-          waitUntil: 'domcontentloaded',
-          timeout: 15000
-        });
-        // Don't consume navigation time
-        break;
-      case 'wait': await doWait(page, action.ms || 1000); consume(action.ms || 1000); break;
-      case 'clickText': await doClickText(page, action.text || ''); consume(800); break;
-      case 'highlight': await doHighlight(page, action.text || '', action.ms || 2000); consume(action.ms || 2000); break;
-      case 'scroll': {
-        const ms = Math.max(1000, Math.min(remaining - 300, action.ms || remaining - 300));
-        await doScroll(page, action.pattern || 'slow-drift', ms);
-        consume(ms);
-        break;
-      }
-      default: break;
-    }
-  }
-
-  // Fill the rest of the scene
-  if (remaining > 0) await page.waitForTimeout(remaining);
 
   console.log(`[recordScene] Scene recording complete, closing context and browser...`);
   await context.close(); // this finalizes the .webm
