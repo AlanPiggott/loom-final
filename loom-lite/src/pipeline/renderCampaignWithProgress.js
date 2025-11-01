@@ -7,12 +7,22 @@ const { normalizeScene } = require('../compose/normalizeScene');
 const { concatScenes } = require('../compose/concatScenes');
 const { overlayFacecam } = require('../compose/overlayFacecam');
 const { makeThumbnail } = require('../compose/thumbnail');
+const { logSection, logStep } = require('../instrumentation');
 
 /**
- * Generate cache key from scene URL
+ * Generate cache key from scene metadata
  */
-function getCacheKey(url) {
-  return crypto.createHash('md5').update(url).digest('hex');
+function getCacheKey(scene, ctx) {
+  const seedParts = [
+    ctx.cacheNamespace || '',
+    scene.cacheKeySalt || '',
+    scene.url,
+    scene.entryType || 'manual',
+  ]
+    .filter(Boolean)
+    .join('|');
+
+  return crypto.createHash('md5').update(seedParts).digest('hex');
 }
 
 /**
@@ -23,9 +33,9 @@ async function retrySceneRecording(scene, ctx, maxAttempts = 3) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`[renderCampaign] Recording ${scene.url} (attempt ${attempt}/${maxAttempts})...`);
+      logStep('recordScene:attempt', { url: scene.url, attempt, maxAttempts });
       const result = await recordScene(scene, ctx);
-      console.log(`[renderCampaign] Successfully recorded ${scene.url}`);
+      logStep('recordScene:success', { url: scene.url, attempt });
       return result;
     } catch (error) {
       lastError = error;
@@ -33,7 +43,7 @@ async function retrySceneRecording(scene, ctx, maxAttempts = 3) {
 
       if (attempt < maxAttempts) {
         const delayMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-        console.log(`[renderCampaign] Retrying in ${delayMs / 1000}s...`);
+        logStep('recordScene:retryDelay', { delayMs, attempt });
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
@@ -63,6 +73,13 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
   const workDir = path.join(baseDir, 'work');
   if (!fs.existsSync(workDir)) fs.mkdirSync(workDir, { recursive: true });
 
+  logSection('renderCampaignWithProgress:start', {
+    baseDir,
+    sceneCount: cfg.scenes?.length || 0,
+    output: cfg.output,
+    cacheNamespace: cfg.cacheNamespace || null,
+  });
+
   // Create cache directory for reusable scene recordings
   const cacheDir = path.join(baseDir, 'cache');
   if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
@@ -73,7 +90,8 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
     fps: cfg.output.fps || 60,
     pageLoadWaitMs: cfg.output.pageLoadWaitMs !== undefined ? cfg.output.pageLoadWaitMs : 7000,
     workDir,
-    cacheDir
+    cacheDir,
+    cacheNamespace: cfg.cacheNamespace || null,
   };
 
   // Sanity for facecam path (if provided)
@@ -83,12 +101,11 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
       : path.join(baseDir, cfg.output.facecam.path);
 
     // Validate duration matching: sum(scenes) must equal facecam duration
-    console.log('[renderCampaign] Validating duration matching...');
+    logStep('renderCampaign:durationValidation:start');
     const facecamMeta = await ffprobeJson(cfg.output.facecam.path);
     const facecamDur = Math.floor(parseFloat(facecamMeta.format?.duration || '0'));
     const scenesTotalDur = cfg.scenes.reduce((sum, s) => sum + (s.durationSec || 0), 0);
-
-    console.log(`[renderCampaign] Facecam duration: ${facecamDur}s, Scenes total: ${scenesTotalDur}s`);
+    logStep('renderCampaign:durationValidation:data', { facecamDur, scenesTotalDur });
 
     if (scenesTotalDur !== facecamDur) {
       const errorMsg = `Duration mismatch: Scenes total ${scenesTotalDur}s must equal facecam ${facecamDur}s. ` +
@@ -97,7 +114,7 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
       throw new Error(errorMsg);
     }
 
-    console.log('[renderCampaign] ✓ Duration validation passed');
+    logStep('renderCampaign:durationValidation:passed');
   }
 
   // Enforce maximum campaign duration of 5 minutes
@@ -110,7 +127,7 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
     throw new Error(errorMsg);
   }
 
-  console.log(`[renderCampaign] ✓ Campaign duration within limit (${scenesTotalDur}s / ${MAX_CAMPAIGN_DURATION_SEC}s)`);
+  logStep('renderCampaign:campaignDuration:ok', { scenesTotalDur, MAX_CAMPAIGN_DURATION_SEC });
 
   // 1) Record scenes (with caching)
   // Progress: 10-40% (30% of total progress for recording)
@@ -122,10 +139,20 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
   try {
     for (let i = 0; i < cfg.scenes.length; i++) {
       const s = cfg.scenes[i];
-      const cacheKey = getCacheKey(s.url);
+      s.isFirstScene = (i === 0); // Flag first scene for special scroll behavior
+      const cacheKey = getCacheKey(s, ctx);
+      logStep('recordScene:start', {
+        index: i,
+        sceneId: s.id,
+        url: s.url,
+        cacheKey,
+        cacheNamespace: ctx.cacheNamespace,
+      });
       const cachedWebm = path.join(cacheDir, `${cacheKey}.webm`);
+      const cachedMeta = path.join(cacheDir, `${cacheKey}.json`);
 
       let videoPath;
+      let trimHintMs = null;
 
       // Update progress for this scene
       const sceneProgress = 10 + (i * progressPerScene);
@@ -133,25 +160,97 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
 
       // Check if we have a cached recording for this URL
       if (fs.existsSync(cachedWebm)) {
-        console.log(`[renderCampaign] Using cached recording for ${s.url}`);
+        logStep('recordScene:cacheHit', { cacheKey, cachedWebm });
 
-        // Copy cached webm to work directory for this scene
-        const workWebm = path.join(workDir, `${s.id}.webm`);
-        fs.copyFileSync(cachedWebm, workWebm);
-        videoPath = workWebm;
-        console.log(`[renderCampaign] Copied from cache (trim will be recomputed from video)`);
+        // Validate cached recording before using it
+        let cacheValid = false;
+        try {
+          const cachedMeta_probe = await ffprobeJson(cachedWebm);
+          const cachedDuration = parseFloat(cachedMeta_probe.format?.duration || '0');
+          const minExpectedDuration = Math.min(2, s.durationSec * 0.2); // At least 2s or 20% of expected
+
+          if (cachedDuration >= minExpectedDuration && cachedMeta_probe.streams?.length > 0) {
+            cacheValid = true;
+            logStep('recordScene:cacheValidated', { cacheKey, cachedDuration, minExpectedDuration });
+          } else {
+            console.warn(`[renderCampaign] Cached recording invalid for ${s.id}: ${cachedDuration.toFixed(2)}s < ${minExpectedDuration.toFixed(2)}s`);
+            logStep('recordScene:cacheInvalid', { cacheKey, cachedDuration, minExpectedDuration });
+          }
+        } catch (err) {
+          console.warn(`[renderCampaign] Failed to validate cache for ${s.id}:`, err.message);
+          logStep('recordScene:cacheValidationError', { cacheKey, error: err.message });
+        }
+
+        if (cacheValid) {
+          // Copy cached webm to work directory for this scene
+          const workWebm = path.join(workDir, `${s.id}.webm`);
+          fs.copyFileSync(cachedWebm, workWebm);
+          videoPath = workWebm;
+          logStep('recordScene:cacheCopy', { cacheKey, trimHintMs });
+
+          if (fs.existsSync(cachedMeta)) {
+            try {
+              const meta = JSON.parse(fs.readFileSync(cachedMeta, 'utf8'));
+              if (Number.isFinite(meta.trimHintMs)) {
+                trimHintMs = Math.max(0, Math.round(meta.trimHintMs));
+              }
+            } catch (err) {
+              console.warn(`[renderCampaign] Failed to read cached metadata ${cachedMeta}:`, err.message);
+            }
+          }
+        } else {
+          // Cache invalid - delete it and record fresh
+          console.warn(`[renderCampaign] Deleting invalid cache for ${s.id}`);
+          try {
+            fs.unlinkSync(cachedWebm);
+            if (fs.existsSync(cachedMeta)) fs.unlinkSync(cachedMeta);
+          } catch (err) {
+            console.warn(`[renderCampaign] Failed to delete invalid cache:`, err.message);
+          }
+          logStep('recordScene:cacheDeleted', { cacheKey });
+
+          // Fall through to cache miss logic
+          logStep('recordScene:cacheMiss', { cacheKey, reason: 'invalid' });
+          const result = await retrySceneRecording(s, ctx);
+          videoPath = result.videoPath;
+          trimHintMs = Number.isFinite(result.trimHintMs) ? Math.max(0, Math.round(result.trimHintMs)) : null;
+
+          // Save to cache for future renders
+          fs.copyFileSync(videoPath, cachedWebm);
+          logStep('recordScene:cacheStore', { cacheKey, trimHintMs });
+
+          try {
+            fs.writeFileSync(cachedMeta, JSON.stringify({ trimHintMs }, null, 2));
+          } catch (err) {
+            console.warn(`[renderCampaign] Failed to write cache metadata ${cachedMeta}:`, err.message);
+          }
+        }
       } else {
-        console.log(`[renderCampaign] Recording ${s.url} (will be cached for future use)`);
+        logStep('recordScene:cacheMiss', { cacheKey });
         const result = await retrySceneRecording(s, ctx);
         videoPath = result.videoPath;
+        trimHintMs = Number.isFinite(result.trimHintMs) ? Math.max(0, Math.round(result.trimHintMs)) : null;
 
         // Save to cache for future renders (webm only, no metadata)
         fs.copyFileSync(videoPath, cachedWebm);
-        console.log(`[renderCampaign] Saved to cache for future reuse`);
+        logStep('recordScene:cacheStore', { cacheKey, trimHintMs });
+
+        try {
+          fs.writeFileSync(cachedMeta, JSON.stringify({ trimHintMs }, null, 2));
+        } catch (err) {
+          console.warn(`[renderCampaign] Failed to write cache metadata ${cachedMeta}:`, err.message);
+        }
       }
+
+      s.trimHintMs = trimHintMs;
 
       // normalizeScene will auto-detect trim from video content
       const mp4 = await normalizeScene(videoPath, ctx, s);
+      logStep('normalizeScene:done', {
+        sceneId: s.id,
+        mp4,
+        trimHintMs,
+      });
       normalized.push(mp4);
     }
   } catch (error) {
@@ -160,12 +259,12 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
 
   // 2) Normalizing scenes (40-60%)
   onProgress('normalizing', 50);
-  console.log('[renderCampaign] All scenes normalized');
+  logStep('renderCampaign:normalize:complete', { count: normalized.length });
 
   // 3) Concat bg (60-70%)
   onProgress('concatenating', 60);
   const bg = await concatScenes(normalized, ctx);
-  console.log('[renderCampaign] Scenes concatenated');
+  logStep('renderCampaign:concat:complete', { output: bg });
   onProgress('concatenating', 70);
 
   // 4) Overlay facecam with audio (70-80%)
@@ -173,10 +272,10 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
   if (cfg.output.facecam?.path && fs.existsSync(cfg.output.facecam.path)) {
     onProgress('overlaying', 70);
     final = await overlayFacecam(bg, cfg.output.facecam, ctx, 0);
-    console.log('[renderCampaign] Facecam overlaid');
+    logStep('renderCampaign:overlay:complete', { output: final });
     onProgress('overlaying', 80);
   } else {
-    console.log('[renderCampaign] No facecam provided, using concatenated video as final');
+    logStep('renderCampaign:overlay:skipped');
     final = bg;
     onProgress('overlaying', 80);
   }
@@ -184,11 +283,12 @@ async function renderCampaignWithProgress(configPathOrObj, onProgress = () => {}
   // 5) Create poster/thumbnail (80-85%)
   onProgress('creating_thumbnail', 80);
   const poster = await makeThumbnail(final, 3);
-  console.log('[renderCampaign] Thumbnail created');
+  logStep('renderCampaign:thumbnail:complete', { poster });
   onProgress('creating_thumbnail', 85);
 
   // Probe final
   const meta = await ffprobeJson(final);
+  logSection('renderCampaignWithProgress:complete', { final, poster, meta });
 
   return { final, poster, meta };
 }
