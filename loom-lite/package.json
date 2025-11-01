@@ -8,7 +8,10 @@
     "worker": "node src/worker.js",
     "worker:dev": "nodemon src/worker.js",
     "worker:pm2": "pm2 start src/worker.js --name loom-worker",
-    "render:sample": "node src/pipeline/renderCampaign.js campaigns/sample/config.json"
+    "render:sample": "node src/pipeline/renderCampaign.js campaigns/sample/config.json",
+    "steel:cdp": "node test-steel-psr.js",
+    "steel:shots": "node test-steel-shots.js",
+    "cleanup": "node src/scripts/cleanup-old-renders.js"
   },
   "keywords": [],
   "author": "",
@@ -21,11 +24,17 @@
     "axios": "^1.7.2",
     "csv-parse": "^5.6.0",
     "dotenv": "^17.2.3",
+    "execa": "^9.6.0",
     "express": "^5.1.0",
+    "ffmpeg-static": "^5.2.0",
     "multer": "^2.0.2",
     "pixelmatch": "^7.1.0",
     "playwright": "^1.56.1",
-    "pngjs": "^7.0.0"
+    "playwright-screen-recorder": "^1.0.0",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^24.27.0",
+    "steel-sdk": "^0.14.0",
+    "undici": "^7.16.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
